@@ -1,6 +1,6 @@
 class Field:
-    def __init__(self):
-        pass
+    def __init__(self, primary_key=False):
+        self.primary_key = primary_key
 
     def decode(self, value):
         return value
@@ -27,6 +27,8 @@ class ObjectField(Field):
         self.model = model
 
     def decode(self, value):
+        if value is None:
+            return None
         return self.model.decode(value)
 
     def encode(self, value):

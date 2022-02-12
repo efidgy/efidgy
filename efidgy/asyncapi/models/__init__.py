@@ -21,3 +21,7 @@ class ProjectType(impl.AsyncViewMixin, models.IProjectType):
 
 class Project(impl.AsyncChangeMixin, models.IProject):
     project_type = impl.fields.ObjectField(model=ProjectType)
+
+
+class Solution(impl.AsyncViewMixin, models.ISolution):
+    pass

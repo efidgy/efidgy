@@ -3,7 +3,7 @@ import unittest
 import asyncio
 
 import efidgy
-from efidgy.syncapi import models as smodels
+from efidgy import models
 from efidgy.asyncapi import models as amodels
 
 import logging
@@ -26,10 +26,10 @@ class TestModels(unittest.TestCase):
     PROJECT_NAME = 'Test Project'
 
     def setUp(self):
-        logging.basicConfig(
-            format='%(asctime)s %(message)s',
-            level=logging.DEBUG,
-        )
+        # logging.basicConfig(
+        #     format='%(asctime)s %(message)s',
+        #     level=logging.DEBUG,
+        # )
         env = efidgy.Env(
             host=self.HOST,
             token=self.EFIDGY_TOKEN,
@@ -38,66 +38,80 @@ class TestModels(unittest.TestCase):
         )
         env.use()
 
-        for project in smodels.Project.all():
-            if project.name == self.PROJECT_NAME:
-                project.delete()
+    #     for project in models.Project.all():
+    #         if project.name == self.PROJECT_NAME:
+    #             project.delete()
 
-    def test_sync(self):
-        project = smodels.Project.create(
-            name=self.PROJECT_NAME,
-            currency='USD',
-            project_type=smodels.ProjectType(
-                code=smodels.ProjectTypeCode.IDD_OR,
-            ),
-            shared_mode=smodels.SharedMode.PRIVATE,
-            demo=False,
-        )
+    # def test_sync(self):
+    #     project = models.Project.create(
+    #         name=self.PROJECT_NAME,
+    #         currency='USD',
+    #         project_type=models.ProjectType(
+    #             code=models.ProjectTypeCode.IDD_OR,
+    #         ),
+    #         shared_mode=models.SharedMode.PRIVATE,
+    #         demo=False,
+    #     )
 
-        store = smodels.idd_or.Store.create(
-            project=project,
-            address='6133 Broadway Terr., Oakland, CA 94618, USA',
-            lat=37.842551,
-            lon=-122.2331699,
-            name='Delivery Inc.',
-        )
+    #     store = models.idd_or.Store.create(
+    #         project=project,
+    #         address='6133 Broadway Terr., Oakland, CA 94618, USA',
+    #         lat=37.842551,
+    #         lon=-122.2331699,
+    #         name='Delivery Inc.',
+    #     )
 
-        store.name = 'Delivery Inc. 2'
-        store.save()
-        store.delete()
+    #     store.name = 'Delivery Inc. 2'
+    #     store.save()
+    #     store.delete()
 
-        store = smodels.idd_or.Store.create(
-            project=project,
-            address='6133 Broadway Terr., Oakland, CA 94618, USA',
-            lat=37.842551,
-            lon=-122.2331699,
-            name='Delivery Inc.',
-        )
-        for store in smodels.idd_or.Store.all(project=project):
-            store.delete()
+    #     store = models.idd_or.Store.create(
+    #         project=project,
+    #         address='6133 Broadway Terr., Oakland, CA 94618, USA',
+    #         lat=37.842551,
+    #         lon=-122.2331699,
+    #         name='Delivery Inc.',
+    #     )
+    #     for store in models.idd_or.Store.all(project=project):
+    #         store.delete()
 
+    # @async_test
+    # async def test_async(self):
+    #     project = await amodels.Project.create(
+    #         name=self.PROJECT_NAME,
+    #         currency='USD',
+    #         project_type=amodels.ProjectType(
+    #             code=amodels.ProjectTypeCode.IDD_OR,
+    #         ),
+    #         shared_mode=amodels.SharedMode.PRIVATE,
+    #         demo=False,
+    #     )
 
-    @async_test
-    async def test_async(self):
-        project = await amodels.Project.create(
-            name=self.PROJECT_NAME,
-            currency='USD',
-            project_type=amodels.ProjectType(
-                code=amodels.ProjectTypeCode.IDD_OR,
-            ),
-            shared_mode=amodels.SharedMode.PRIVATE,
-            demo=False,
-        )
+    #     store = await amodels.idd_or.Store.create(
+    #         project=project,
+    #         address='6133 Broadway Terr., Oakland, CA 94618, USA',
+    #         lat=37.842551,
+    #         lon=-122.2331699,
+    #         name='Delivery Inc.',
+    #     )
 
-        store = await amodels.idd_or.Store.create(
-            project=project,
-            address='6133 Broadway Terr., Oakland, CA 94618, USA',
-            lat=37.842551,
-            lon=-122.2331699,
-            name='Delivery Inc.',
-        )
+    #     print(store)
 
-        print(store)
+    #     store.name = 'Delivery Inc. 2'
+    #     await store.save()
+    #     await store.delete()
 
-        store.name = 'Delivery Inc. 2'
-        await store.save()
-        await store.delete()
+    def test_solution(self):
+        project_type = models.ProjectType.get(code='idd_or')
+        print(project_type)
+        project = models.Project.get(pk='MS1X74D8qE4')
+        solutions = models.Solution.all(project=project)
+        solution = solutions[0]
+
+        vehicles = models.idd_or.Vehicle.all(project=project)
+        for vehicle in vehicles:
+            print(vehicle)
+
+        vehicles = models.idd_or.Vehicle.all(project=project, solution=solution)
+        for vehicle in vehicles:
+            print(vehicle)

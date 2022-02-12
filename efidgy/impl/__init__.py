@@ -53,6 +53,11 @@ class ModelMeta(type):
         for field_name, field in cls._iter_fields(Model):
             field.name = field_name
             Model.Meta.fields.append(field)
+            if (
+                field.primary_key
+                and getattr(Model.Meta, 'primary_key', None) is None
+            ):
+                Model.Meta.primary_key = field
 
         Model.__repr__ = cls._repr()
 
@@ -62,6 +67,8 @@ class ModelMeta(type):
 class Model(metaclass=ModelMeta):
     class Meta:
         path = None
+        fields = []
+        primary_key = None
 
     @classmethod
     def decode(cls, data, **kwargs):
@@ -128,7 +135,31 @@ class ProjectModel(Model):
         self.project = project
 
 
-class SyncListMixin:
+class SolutionModel(ProjectModel):
+    @classmethod
+    def get_path(cls, context):
+        solution = context.get('solution')
+        if solution is None:
+            return super().get_path(context)
+        project = context.get('project')
+        return '/projects/{project}/solutions/{solution}{path}'.format(
+            project=project.pk,
+            solution=solution.pk,
+            path=cls.Meta.path,
+        )
+
+    def get_context(self):
+        return {
+            **super().get_context(),
+            'solution': self.solution,
+        }
+
+    def __init__(self, solution=None, **kwargs):
+        super().__init__(**kwargs)
+        self.solution = solution
+
+
+class SyncAllMixin:
     @classmethod
     def all(cls, **kwargs):
         c = client.SyncClient(cls.get_env())
@@ -137,6 +168,16 @@ class SyncListMixin:
         for data in c.get(path):
             ret.append(cls.decode(data, **kwargs))
         return ret
+
+
+class SyncGetMixin:
+    @classmethod
+    def get(cls, **kwargs):
+        c = client.SyncClient(cls.get_env())
+        path = cls.get_path(kwargs)
+        pk = kwargs[cls.Meta.primary_key.name]
+        data = c.get('{}/{}'.format(path, pk))
+        return cls.decode(data, **kwargs)
 
 
 class SyncCreateMixin:
@@ -163,7 +204,10 @@ class SyncDeleteMixin:
         c.delete('{}/{}'.format(path, self.pk))
 
 
-class SyncViewMixin(SyncListMixin):
+class SyncViewMixin(
+            SyncAllMixin,
+            SyncGetMixin,
+        ):
     pass
 
 
@@ -176,7 +220,7 @@ class SyncChangeMixin(
     pass
 
 
-class AsyncListMixin:
+class AsyncAllMixin:
     @classmethod
     async def all(cls, **kwargs):
         c = client.AsyncClient(cls.get_env())
@@ -211,7 +255,7 @@ class AsyncDeleteMixin:
         await c.delete('{}/{}'.format(path, self.pk))
 
 
-class AsyncViewMixin(AsyncListMixin):
+class AsyncViewMixin(AsyncAllMixin):
     pass
 
 
