@@ -1,17 +1,19 @@
-from efidgy import fields
 from efidgy import impl
-
 
 from . import idd_or
 
 
 __all__ = [
     idd_or,
-    'SharedMode',
-    'ProjectTypeCode',
-    'ProjectType',
     'Project',
+    'ProjectType',
+    'ProjectTypeCode',
+    'SharedMode',
 ]
+
+
+class ProjectTypeCode:
+    IDD_OR = 'idd_or'
 
 
 class SharedMode:
@@ -20,26 +22,30 @@ class SharedMode:
     EDITABLE = 'editable'
 
 
-class ProjectTypeCode:
-    IDD_OR = 'idd_or'
-
-
-class ProjectType(impl.Model):
-    code = fields.CharField()
-    name = fields.CharField()
-    description = fields.CharField()
+class IProjectType(impl.EfidgyModel):
+    code = impl.fields.CharField()
+    name = impl.fields.CharField()
+    description = impl.fields.CharField()
 
     class Meta:
-        pass
+        path = '/refs/project_types'
 
 
-class Project(impl.Model):
-    pk = fields.CharField()
-    name = fields.CharField()
-    currency = fields.CharField()
-    project_type = fields.ObjectField(model=ProjectType)
-    shared_mode = fields.CharField()
-    demo = fields.BooleanField()
+class IProject(impl.CustomerModel):
+    pk = impl.fields.CharField()
+    name = impl.fields.CharField()
+    currency = impl.fields.CharField()
+    project_type = impl.fields.ObjectField(model=IProjectType)
+    shared_mode = impl.fields.CharField()
+    demo = impl.fields.BooleanField()
 
     class Meta:
         path = '/projects'
+
+
+class ProjectType(impl.SyncViewMixin, IProjectType):
+    pass
+
+
+class Project(impl.SyncChangeMixin, IProject):
+    project_type = impl.fields.ObjectField(model=ProjectType)

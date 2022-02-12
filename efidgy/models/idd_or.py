@@ -1,5 +1,4 @@
 from efidgy import impl
-from efidgy import fields
 
 
 __all__ = [
@@ -7,17 +6,21 @@ __all__ = [
 ]
 
 
-class Store(impl.ProjectModel):
-    pk = fields.CharField()
-    address = fields.CharField()
-    enabled = fields.BooleanField()
-    lat = fields.FloatField()
-    lon = fields.FloatField()
-    point_type = fields.CharField()
-    name = fields.CharField()
-    description = fields.CharField()
-    open_time = fields.CharField()
-    close_time = fields.CharField()
+class IStore(impl.ProjectModel):
+    pk = impl.fields.CharField()
+    address = impl.fields.CharField()
+    enabled = impl.fields.BooleanField()
+    lat = impl.fields.FloatField()
+    lon = impl.fields.FloatField()
+    point_type = impl.fields.CharField()
+    name = impl.fields.CharField()
+    description = impl.fields.CharField()
+    open_time = impl.fields.CharField()
+    close_time = impl.fields.CharField()
 
     class Meta:
         path = '/stores'
+
+
+class Store(impl.SyncChangeMixin, IStore):
+    pass

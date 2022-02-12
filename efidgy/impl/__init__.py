@@ -1,38 +1,67 @@
-from collections import deque
-
 from efidgy import Env
-from efidgy.fields import Field
 
 from . import client
+from . import fields
 
 
 class ModelMeta(type):
     @classmethod
     def _iter_fields(cls, obj):
-        q = deque([obj])
-        while q:
-            o = q.popleft()
-            for field_name, field in o.__dict__.items():
-                if not isinstance(field, Field):
+        for base in obj.__bases__:
+            for field_name, field in cls._iter_fields(base):
+                yield field_name, field
+
+            for field_name, field in obj.__dict__.items():
+                if not isinstance(field, fields.Field):
                     continue
                 yield field_name, field
-            q.extend(o.__bases__)
 
     @classmethod
-    def __new__(cls, *args):
-        Model = super().__new__(*args)
+    def _find_meta_bases(cls, bases):
+        ret = []
+        for base in bases:
+            meta = getattr(base, 'Meta', None)
+            if meta is None:
+                ret.extend(cls._find_meta_bases(base.__bases__))
+            else:
+                ret.append(meta)
+        return ret
+
+    @classmethod
+    def _meta_factory(cls, bases):
+        return type('Meta', tuple(cls._find_meta_bases(bases)), {})
+
+    @classmethod
+    def _repr(cls):
+        def repr_impl(self):
+            fields = []
+            for field in self.Meta.fields:
+                value = getattr(self, field.name, None)
+                if isinstance(value, str):
+                    value = '"{}"'.format(value)
+                fields.append('{}={}'.format(field.name, value))
+            return '<{} {}>'.format(self.__class__.__name__, ' '.join(fields))
+        return repr_impl
+
+    def __new__(cls, name, bases, attrs):
+        if 'Meta' not in attrs:
+            attrs['Meta'] = cls._meta_factory(bases)
+
+        Model = super().__new__(cls, name, bases, attrs)
 
         Model.Meta.fields = []
         for field_name, field in cls._iter_fields(Model):
             field.name = field_name
             Model.Meta.fields.append(field)
 
+        Model.__repr__ = cls._repr()
+
         return Model
 
 
 class Model(metaclass=ModelMeta):
     class Meta:
-        pass
+        path = None
 
     @classmethod
     def decode(cls, data, **kwargs):
@@ -54,12 +83,29 @@ class Model(metaclass=ModelMeta):
     def get_path(cls, context):
         return cls.Meta.path
 
+    @classmethod
+    def get_env(cls):
+        return Env.current
+
     def get_context(self):
         return {}
 
     def __init__(self, **kwargs):
         for field in self.Meta.fields:
             setattr(self, field.name, kwargs.get(field.name))
+
+
+class EfidgyModel(Model):
+    @classmethod
+    def get_env(cls):
+        return Env.extend(
+            super().get_env(),
+            code='efidgy',
+        )
+
+
+class CustomerModel(Model):
+    pass
 
 
 class ProjectModel(Model):
@@ -85,7 +131,7 @@ class ProjectModel(Model):
 class SyncListMixin:
     @classmethod
     def all(cls, **kwargs):
-        c = client.SyncClient(Env.current)
+        c = client.SyncClient(cls.get_env())
         path = cls.get_path(kwargs)
         ret = []
         for data in c.get(path):
@@ -96,7 +142,7 @@ class SyncListMixin:
 class SyncCreateMixin:
     @classmethod
     def create(cls, **kwargs):
-        c = client.SyncClient(Env.current)
+        c = client.SyncClient(cls.get_env())
         path = cls.get_path(kwargs)
         obj = cls(**kwargs)
         data = c.post(path, cls.encode(obj))
@@ -105,14 +151,14 @@ class SyncCreateMixin:
 
 class SyncSaveMixin:
     def save(self):
-        c = client.SyncClient(Env.current)
+        c = client.SyncClient(self.get_env())
         path = self.get_path(self.get_context())
         c.put('{}/{}'.format(path, self.pk), self.encode(self))
 
 
 class SyncDeleteMixin:
     def delete(self):
-        c = client.SyncClient(Env.current)
+        c = client.SyncClient(self.get_env())
         path = self.get_path(self.get_context())
         c.delete('{}/{}'.format(path, self.pk))
 
@@ -133,7 +179,7 @@ class SyncChangeMixin(
 class AsyncListMixin:
     @classmethod
     async def all(cls, **kwargs):
-        c = client.AsyncClient(Env.current)
+        c = client.AsyncClient(cls.get_env())
         path = cls.get_path(kwargs)
         ret = []
         for data in await c.get(path):
@@ -144,7 +190,7 @@ class AsyncListMixin:
 class AsyncCreateMixin:
     @classmethod
     async def create(cls, **kwargs):
-        c = client.AsyncClient(Env.current)
+        c = client.AsyncClient(cls.get_env())
         path = cls.get_path(kwargs)
         obj = cls(**kwargs)
         data = await c.post(path, cls.encode(obj))
@@ -153,14 +199,14 @@ class AsyncCreateMixin:
 
 class AsyncSaveMixin:
     async def save(self, **kwargs):
-        c = client.AsyncClient(Env.current)
+        c = client.AsyncClient(self.get_env())
         path = self.get_path(self.get_context())
         await c.put('{}/{}'.format(path, self.pk), self.encode(self))
 
 
 class AsyncDeleteMixin:
     async def delete(self, **kwargs):
-        c = client.AsyncClient(Env.current)
+        c = client.AsyncClient(self.get_env())
         path = self.get_path(self.get_context())
         await c.delete('{}/{}'.format(path, self.pk))
 

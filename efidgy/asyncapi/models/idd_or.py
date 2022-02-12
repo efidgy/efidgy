@@ -7,5 +7,5 @@ __all__ = [
 ]
 
 
-class Store(impl.AsyncChangeMixin, models.idd_or.Store):
+class Store(impl.AsyncChangeMixin, models.idd_or.IStore):
     pass
