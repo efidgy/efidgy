@@ -3,20 +3,26 @@ class Env:
 
     HOST = 'console.efidgy.com'
 
-    def __init__(self, host=None, token=None, code=None, insecure=False):
+    def __init__(
+            self, host=None, token=None, code=None, unit_system=None,
+            insecure=False):
         self.host = host if host is not None else self.HOST
         self.token = token
         self.code = code
+        self.unit_system = unit_system
         self.insecure = insecure
 
     def use(self):
         Env.current = self
 
-    @classmethod
-    def extend(cls, env, **kwargs):
+    def extend(self, **kwargs):
         return Env(
-            host=kwargs.get('host', env.host),
-            token=kwargs.get('token', env.token),
-            code=kwargs.get('code', env.code),
-            insecure=kwargs.get('insecure', env.insecure),
+            **{
+                'host': self.host,
+                'token': self.token,
+                'code': self.code,
+                'unit_system': self.unit_system,
+                'insecure': self.insecure,
+                **kwargs,
+            }
         )

@@ -1,12 +1,20 @@
 import unittest
 
+import datetime
+
 import asyncio
 
 import efidgy
 from efidgy import models
+from efidgy import exceptions
 from efidgy.asyncapi import models as amodels
 
 import logging
+
+
+HOST = 'console.efidgy-dev.com'
+EFIDGY_TOKEN = 'myqCTue4jyouzzFty4SfxTst9Z0N5DQD'
+CUSTOMER_CODE = 'demo'
 
 
 def async_test(coro):
@@ -19,10 +27,70 @@ def async_test(coro):
     return wrapper
 
 
+class TestImpl(unittest.TestCase):
+    PROJECT_NAME = 'Test Project'
+
+    def setUp(self):
+        self.env = efidgy.Env(
+            host=HOST,
+            token=EFIDGY_TOKEN,
+            code=CUSTOMER_CODE,
+            insecure=True,
+        )
+        self.env.use()
+
+    def test_client_errors(self):
+        with self.assertRaises(AssertionError):
+            models.ProjectType.get(pk='XXX')
+        with self.assertRaises(AssertionError):
+            models.Project.get(foo='XXX')
+
+    def test_authentication(self):
+        env = self.env.extend(token='XXX')
+        env.use()
+        with self.assertRaises(exceptions.AuthenticationFailed):
+            models.Project.get(pk='XXX')
+
+    def test_not_found(self):
+        with self.assertRaises(exceptions.NotFound):
+            models.Project.get(pk='XXX')
+
+    def test_validation(self):
+        with self.assertRaises(exceptions.ValidationError):
+            models.Project.create(
+                name='Test Project',
+                currency='USD',
+                project_type=amodels.ProjectType(
+                    code='XXX',
+                ),
+                shared_mode=amodels.SharedMode.PRIVATE,
+            )
+
+    def test_sync(self):
+        project = models.Project.create(
+            name=self.PROJECT_NAME,
+            currency='USD',
+            project_type=models.ProjectType(
+                code=models.ProjectTypeCode.IDD_OR,
+            ),
+            shared_mode=models.SharedMode.PRIVATE,
+        )
+        project.delete()
+
+    @async_test
+    async def test_async(self):
+        project = await amodels.Project.create(
+            name=self.PROJECT_NAME,
+            currency='USD',
+            project_type=amodels.ProjectType(
+                code=amodels.ProjectTypeCode.IDD_OR,
+            ),
+            shared_mode=amodels.SharedMode.PRIVATE,
+        )
+        await project.delete()
+
+
 class TestModels(unittest.TestCase):
-    HOST = 'console.efidgy-dev.com'
-    EFIDGY_TOKEN = 'myqCTue4jyouzzFty4SfxTst9Z0N5DQD'
-    CUSTOMER_CODE = 'demo'
     PROJECT_NAME = 'Test Project'
 
     def setUp(self):
@@ -30,88 +98,44 @@ class TestModels(unittest.TestCase):
         #     format='%(asctime)s %(message)s',
         #     level=logging.DEBUG,
         # )
-        env = efidgy.Env(
-            host=self.HOST,
-            token=self.EFIDGY_TOKEN,
-            code=self.CUSTOMER_CODE,
+        self.env = efidgy.Env(
+            host=HOST,
+            token=EFIDGY_TOKEN,
+            code=CUSTOMER_CODE,
             insecure=True,
         )
-        env.use()
+        self.env.use()
 
-    #     for project in models.Project.all():
-    #         if project.name == self.PROJECT_NAME:
-    #             project.delete()
+        for project in models.Project.all():
+            if project.name == self.PROJECT_NAME:
+                project.delete()
 
-    # def test_sync(self):
-    #     project = models.Project.create(
-    #         name=self.PROJECT_NAME,
-    #         currency='USD',
-    #         project_type=models.ProjectType(
-    #             code=models.ProjectTypeCode.IDD_OR,
-    #         ),
-    #         shared_mode=models.SharedMode.PRIVATE,
-    #         demo=False,
-    #     )
+    def test_solve(self):
+        project = models.Project.create(
+            name=self.PROJECT_NAME,
+            currency='USD',
+            project_type=models.ProjectType(
+                code=models.ProjectTypeCode.IDD_OR,
+            ),
+            shared_mode=models.SharedMode.PRIVATE,
+        )
 
-    #     store = models.idd_or.Store.create(
-    #         project=project,
-    #         address='6133 Broadway Terr., Oakland, CA 94618, USA',
-    #         lat=37.842551,
-    #         lon=-122.2331699,
-    #         name='Delivery Inc.',
-    #     )
+        store = models.idd_or.Store.create(
+            project=project,
+            address='6133 Broadway Terr., Oakland, CA 94618, USA',
+            lat=37.842551,
+            lon=-122.2331699,
+            name='Delivery Inc.',
+            open_time=datetime.time(8, 0),
+            close_time=datetime.time(18, 0),
+        )
 
-    #     store.name = 'Delivery Inc. 2'
-    #     store.save()
-    #     store.delete()
-
-    #     store = models.idd_or.Store.create(
-    #         project=project,
-    #         address='6133 Broadway Terr., Oakland, CA 94618, USA',
-    #         lat=37.842551,
-    #         lon=-122.2331699,
-    #         name='Delivery Inc.',
-    #     )
-    #     for store in models.idd_or.Store.all(project=project):
-    #         store.delete()
-
-    # @async_test
-    # async def test_async(self):
-    #     project = await amodels.Project.create(
-    #         name=self.PROJECT_NAME,
-    #         currency='USD',
-    #         project_type=amodels.ProjectType(
-    #             code=amodels.ProjectTypeCode.IDD_OR,
-    #         ),
-    #         shared_mode=amodels.SharedMode.PRIVATE,
-    #         demo=False,
-    #     )
-
-    #     store = await amodels.idd_or.Store.create(
-    #         project=project,
-    #         address='6133 Broadway Terr., Oakland, CA 94618, USA',
-    #         lat=37.842551,
-    #         lon=-122.2331699,
-    #         name='Delivery Inc.',
-    #     )
-
-    #     print(store)
-
-    #     store.name = 'Delivery Inc. 2'
-    #     await store.save()
-    #     await store.delete()
-
-    def test_solution(self):
-        project_type = models.ProjectType.get(code='idd_or')
-        print(project_type)
-        project = models.Project.get(pk='MS1X74D8qE4')
-        solutions = models.Solution.all(project=project)
-        solution = solutions[0]
-
-        vehicles = models.idd_or.Vehicle.all(project=project)
-        for vehicle in vehicles:
-            print(vehicle)
-
-        vehicles = models.idd_or.Vehicle.all(project=project, solution=solution)
-        for vehicle in vehicles:
-            print(vehicle)
+        vehicle = models.idd_or.Vehicle.create(
+            project=project,
+            store=store,
+            name='Gary Bailey',
+            fuel_consumption=11.76,
+            fuel_price=3.25,
+            salary_per_duration=21,
+            duration_limit=datetime.timedelta(hours=8),
+        )

@@ -11,7 +11,7 @@ class ModelMeta(type):
             for field_name, field in cls._iter_fields(base):
                 yield field_name, field
 
-            for field_name, field in obj.__dict__.items():
+            for field_name, field in vars(obj).items():
                 if not isinstance(field, fields.Field):
                     continue
                 yield field_name, field
@@ -105,10 +105,7 @@ class Model(metaclass=ModelMeta):
 class EfidgyModel(Model):
     @classmethod
     def get_env(cls):
-        return Env.extend(
-            super().get_env(),
-            code='efidgy',
-        )
+        return super().get_env().extend(code='efidgy')
 
 
 class CustomerModel(Model):
@@ -175,7 +172,11 @@ class SyncGetMixin:
     def get(cls, **kwargs):
         c = client.SyncClient(cls.get_env())
         path = cls.get_path(kwargs)
-        pk = kwargs[cls.Meta.primary_key.name]
+        pk_name = cls.Meta.primary_key.name
+        pk = kwargs.get(pk_name, None)
+        assert pk is not None, (
+            'Primary key not provided: {}'.format(pk_name),
+        )
         data = c.get('{}/{}'.format(path, pk))
         return cls.decode(data, **kwargs)
 
@@ -245,7 +246,10 @@ class AsyncSaveMixin:
     async def save(self, **kwargs):
         c = client.AsyncClient(self.get_env())
         path = self.get_path(self.get_context())
-        await c.put('{}/{}'.format(path, self.pk), self.encode(self))
+        await c.put(
+            '{}/{}'.format(path, self.pk),
+            self.encode(self),
+        )
 
 
 class AsyncDeleteMixin:

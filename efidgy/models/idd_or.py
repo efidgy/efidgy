@@ -6,17 +6,26 @@ __all__ = [
 ]
 
 
-class IStore(impl.ProjectModel):
-    pk = impl.fields.CharField(primary_key=True)
+class PointType:
+    STORE = 'store'
+    ORDER = 'order'
+
+
+class IPoint(impl.ProjectModel):
+    pk = impl.fields.PrimaryKey()
     address = impl.fields.CharField()
     enabled = impl.fields.BooleanField()
     lat = impl.fields.FloatField()
     lon = impl.fields.FloatField()
     point_type = impl.fields.CharField()
+
+
+class IStore(IPoint):
     name = impl.fields.CharField()
     description = impl.fields.CharField()
-    open_time = impl.fields.CharField()
-    close_time = impl.fields.CharField()
+    open_time = impl.fields.TimeField()
+    close_time = impl.fields.TimeField()
+    issues = impl.fields.DictField()
 
     class Meta:
         path = '/stores'
@@ -31,8 +40,12 @@ class IVehicleRoute(impl.Model):
 
 
 class IVehicle(impl.SolutionModel):
-    pk = impl.fields.CharField(primary_key=True)
+    pk = impl.fields.PrimaryKey()
     name = impl.fields.CharField()
+    description = impl.fields.CharField()
+    enabled = impl.fields.BooleanField()
+    features = impl.fields.ListField(item=impl.fields.CharField())
+    store = impl.fields.ObjectField(model=IStore)
     route = impl.fields.ObjectField(model=IVehicleRoute)
 
     class Meta:
@@ -48,4 +61,5 @@ class VehicleRoute(IVehicleRoute):
 
 
 class Vehicle(impl.SyncChangeMixin, IVehicle):
+    store = impl.fields.ObjectField(model=Store)
     route = impl.fields.ObjectField(model=VehicleRoute)
