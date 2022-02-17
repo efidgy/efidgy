@@ -60,7 +60,7 @@ class TestImpl(unittest.TestCase):
             models.Project.create(
                 name='Test Project',
                 currency='USD',
-                project_type=amodels.ProjectType(
+                project_type=models.ProjectType(
                     code='XXX',
                 ),
                 shared_mode=amodels.SharedMode.PRIVATE,
@@ -95,7 +95,7 @@ class TestModels(unittest.TestCase):
 
     def setUp(self):
         # logging.basicConfig(
-        #     format='%(asctime)s %(message)s',
+        #     format='%(asctime)s %(name)s %(message)s',
         #     level=logging.DEBUG,
         # )
         self.env = efidgy.Env(
@@ -110,6 +110,87 @@ class TestModels(unittest.TestCase):
             if project.name == self.PROJECT_NAME:
                 project.delete()
 
+        self.stores = [
+            {
+                'address': '6133 Broadway Terr., Oakland, CA 94618, USA',
+                'lat': 37.842551,
+                'lon': -122.2331699,
+                'name': 'Delivery Inc.',
+                'open_time': datetime.time(8, 0),
+                'close_time': datetime.time(18, 0),
+            },
+        ]
+
+        self.vehicles = [
+            {
+                'store': 'Delivery Inc.',
+                'name': 'Gary Bailey',
+                'fuel_consumption': 11.76,
+                'fuel_price': 3.25,
+                'salary_per_duration': 21,
+                'duration_limit': datetime.timedelta(hours=9),
+            },
+        ]
+
+        self.orders = [
+            {
+                'store': 'Delivery Inc.',
+                'name': '#00001',
+                'address': '1 Downey Pl, Oakland, CA 94610, USA',
+                'lat': 37.811901,
+                'lon': -122.222382,
+                'ready_time': datetime.time(8, 0),
+                'delivery_time_from': datetime.time(12, 0),
+                'delivery_time_to': datetime.time(16, 0),
+                'load_duration': datetime.timedelta(minutes=1),
+                'unload_duration': datetime.timedelta(minutes=5),
+                'boxes': 1,
+                'volume': 3.53,
+                'weight': 22.05,
+            },
+        ]
+
+    def _repr_point(self, point):
+        return point.name
+
+    def _print_vehicle(self, vehicle):
+        print(vehicle.name)
+        if vehicle.route is None:
+            return
+        prev_schedule = None
+        for schedule in vehicle.route.schedule:
+            print('{at}\t{arr}\t{dep}'.format(
+                at=self._repr_point(schedule.start_point),
+                arr=prev_schedule.arrival_time if prev_schedule else None,
+                dep=schedule.departure_time,
+            ))
+            prev_schedule = schedule
+        if prev_schedule:
+            print('{at}\t{arr}\t{dep}'.format(
+                at=self._repr_point(prev_schedule.end_point),
+                arr=prev_schedule.arrival_time,
+                dep=None,
+            ))
+
+    def _print_order(self, order):
+        print(order.name)
+        if order.route is None:
+            return
+        prev_schedule = None
+        for schedule in order.route.schedule:
+            print('{at}\t{arr}\t{dep}'.format(
+                at=self._repr_point(schedule.start_point),
+                arr=prev_schedule.arrival_time if prev_schedule else None,
+                dep=schedule.departure_time,
+            ))
+            prev_schedule = schedule
+        if prev_schedule:
+            print('{at}\t{arr}\t{dep}'.format(
+                at=self._repr_point(prev_schedule.end_point),
+                arr=prev_schedule.arrival_time,
+                dep=None,
+            ))
+
     def test_solve(self):
         project = models.Project.create(
             name=self.PROJECT_NAME,
@@ -120,22 +201,109 @@ class TestModels(unittest.TestCase):
             shared_mode=models.SharedMode.PRIVATE,
         )
 
-        store = models.idd_or.Store.create(
+        stores = {}
+        for data in self.stores:
+            store = models.idd_or.Store.create(
+                project=project,
+                **data,
+            )
+            stores[store.name] = store
+
+        vehicles = {}
+        for data in self.vehicles:
+            data['store'] = stores[data['store']]
+            vehicle = models.idd_or.Vehicle.create(
+                project=project,
+                **data,
+            )
+            vehicles[vehicle.name] = vehicle
+
+        orders = {}
+        for data in self.orders:
+            data['store'] = stores[data['store']]
+            order = models.idd_or.Order.create(
+                project=project,
+                **data,
+            )
+            orders[order.name] = order
+
+        project.computate()
+
+        solutions = models.Solution.all(
             project=project,
-            address='6133 Broadway Terr., Oakland, CA 94618, USA',
-            lat=37.842551,
-            lon=-122.2331699,
-            name='Delivery Inc.',
-            open_time=datetime.time(8, 0),
-            close_time=datetime.time(18, 0),
+        )
+        self.assertTrue(len(solutions) > 0)
+        solution = solutions[0]
+
+        vehicles = models.idd_or.Vehicle.all(
+            project=project,
+            solution=solution,
+        )
+        for vehicle in vehicles:
+            self._print_vehicle(vehicle)
+
+        orders = models.idd_or.Order.all(
+            project=project,
+            solution=solution,
+        )
+        for order in orders:
+            self._print_order(order)
+
+    @async_test
+    async def test_asolve(self):
+        project = await amodels.Project.create(
+            name=self.PROJECT_NAME,
+            currency='USD',
+            project_type=amodels.ProjectType(
+                code=amodels.ProjectTypeCode.IDD_OR,
+            ),
+            shared_mode=amodels.SharedMode.PRIVATE,
         )
 
-        vehicle = models.idd_or.Vehicle.create(
+        stores = {}
+        for data in self.stores:
+            store = await amodels.idd_or.Store.create(
+                project=project,
+                **data,
+            )
+            stores[store.name] = store
+
+        vehicles = {}
+        for data in self.vehicles:
+            data['store'] = stores[data['store']]
+            vehicle = await amodels.idd_or.Vehicle.create(
+                project=project,
+                **data,
+            )
+            vehicles[vehicle.name] = vehicle
+
+        orders = {}
+        for data in self.orders:
+            data['store'] = stores[data['store']]
+            order = await amodels.idd_or.Order.create(
+                project=project,
+                **data,
+            )
+            orders[order.name] = order
+
+        await project.computate()
+
+        solutions = await amodels.Solution.all(
             project=project,
-            store=store,
-            name='Gary Bailey',
-            fuel_consumption=11.76,
-            fuel_price=3.25,
-            salary_per_duration=21,
-            duration_limit=datetime.timedelta(hours=8),
         )
+        self.assertTrue(len(solutions) > 0)
+        solution = solutions[0]
+
+        vehicles = await amodels.idd_or.Vehicle.all(
+            project=project,
+            solution=solution,
+        )
+        for vehicle in vehicles:
+            self._print_vehicle(vehicle)
+
+        orders = await amodels.idd_or.Order.all(
+            project=project,
+            solution=solution,
+        )
+        for order in orders:
+            self._print_order(order)

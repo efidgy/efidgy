@@ -47,6 +47,9 @@ class Client:
         if status_code == 404:
             detail = data.get('detail', 'Not found.')
             raise exceptions.NotFound(detail)
+        if status_code == 405:
+            detail = data.get('detail', 'Method not allowed.')
+            raise exceptions.MethodNotAllowed(detail)
         if status_code >= 500 and status_code < 600:
             raise exceptions.InternalServerError()
         raise RuntimeError(
@@ -75,33 +78,44 @@ class SyncClient(Client):
                 url,
                 headers=self._auth(),
             )
-            return json.load(response)
+            try:
+                return json.load(response)
+            except json.decoder.JSONDecodeError:
+                return None
 
     def post(self, path, data):
         with self._client() as client:
             url = self._url(path)
+            data = json.dumps(data) if data is not None else None
             response = client.post(
                 url,
-                content=json.dumps(data),
+                content=data,
                 headers={
                     'Content-Type': 'application/json',
                     **self._auth(),
                 }
             )
-            return json.load(response)
+            try:
+                return json.load(response)
+            except json.decoder.JSONDecodeError:
+                return None
 
     def put(self, path, data):
         with self._client() as client:
             url = self._url(path)
+            data = json.dumps(data) if data is not None else None
             response = client.put(
                 url,
-                content=json.dumps(data),
+                content=data,
                 headers={
                     'Content-Type': 'application/json',
                     **self._auth(),
                 }
             )
-            return json.load(response)
+            try:
+                return json.load(response)
+            except json.decoder.JSONDecodeError:
+                return None
 
     def delete(self, path):
         with self._client() as client:
@@ -136,7 +150,10 @@ class AsyncClient(Client):
                 url,
                 headers=self._auth(),
             )
-            return json.load(response)
+            try:
+                return json.load(response)
+            except json.decoder.JSONDecodeError:
+                return None
 
     async def post(self, path, data):
         async with self._client() as client:
@@ -149,7 +166,10 @@ class AsyncClient(Client):
                     **self._auth(),
                 }
             )
-            return json.load(response)
+            try:
+                return json.load(response)
+            except json.decoder.JSONDecodeError:
+                return None
 
     async def put(self, path, data):
         async with self._client() as client:
@@ -162,7 +182,10 @@ class AsyncClient(Client):
                     **self._auth(),
                 }
             )
-            return json.load(response)
+            try:
+                return json.load(response)
+            except json.decoder.JSONDecodeError:
+                return None
 
     async def delete(self, path):
         async with self._client() as client:

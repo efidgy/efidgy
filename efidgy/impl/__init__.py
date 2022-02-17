@@ -1,7 +1,12 @@
+import logging
+
 from efidgy import Env
 
 from . import client
 from . import fields
+
+
+module_logger = logging.getLogger('efidgy')
 
 
 class ModelMeta(type):
@@ -74,7 +79,7 @@ class Model(metaclass=ModelMeta):
     def decode(cls, data, **kwargs):
         kw = {**kwargs}
         for field in cls.Meta.fields:
-            kw[field.name] = field.decode(data.get(field.name))
+            kw[field.name] = field.decode(data.get(field.name), **kwargs)
         return cls(**kw)
 
     @classmethod
@@ -116,6 +121,9 @@ class ProjectModel(Model):
     @classmethod
     def get_path(cls, context):
         project = context.get('project')
+        assert project is not None, (
+            'Project not passed.'
+        )
         return '/projects/{project}{path}'.format(
             project=project.pk,
             path=cls.Meta.path,
@@ -129,6 +137,9 @@ class ProjectModel(Model):
 
     def __init__(self, project=None, **kwargs):
         super().__init__(**kwargs)
+        assert project is not None, (
+            'Project not specified.'
+        )
         self.project = project
 
 
@@ -179,6 +190,17 @@ class SyncGetMixin:
         )
         data = c.get('{}/{}'.format(path, pk))
         return cls.decode(data, **kwargs)
+
+    def refresh(self):
+        pk_name = self.Meta.primary_key.name
+        pk = getattr(self, pk_name, None)
+        kwargs = {
+            **self.get_context(),
+            pk_name: pk,
+        }
+        obj = self.get(**kwargs)
+        for field in self.Meta.fields:
+            setattr(self, field.name, getattr(obj, field.name))
 
 
 class SyncCreateMixin:
@@ -232,6 +254,31 @@ class AsyncAllMixin:
         return ret
 
 
+class AsyncGetMixin:
+    @classmethod
+    async def get(cls, **kwargs):
+        c = client.AsyncClient(cls.get_env())
+        path = cls.get_path(kwargs)
+        pk_name = cls.Meta.primary_key.name
+        pk = kwargs.get(pk_name, None)
+        assert pk is not None, (
+            'Primary key not provided: {}'.format(pk_name),
+        )
+        data = await c.get('{}/{}'.format(path, pk))
+        return cls.decode(data, **kwargs)
+
+    async def refresh(self):
+        pk_name = self.Meta.primary_key.name
+        pk = getattr(self, pk_name, None)
+        kwargs = {
+            **self.get_context(),
+            pk_name: pk,
+        }
+        obj = await self.get(**kwargs)
+        for field in self.Meta.fields:
+            setattr(self, field.name, getattr(obj, field.name))
+
+
 class AsyncCreateMixin:
     @classmethod
     async def create(cls, **kwargs):
@@ -259,7 +306,10 @@ class AsyncDeleteMixin:
         await c.delete('{}/{}'.format(path, self.pk))
 
 
-class AsyncViewMixin(AsyncAllMixin):
+class AsyncViewMixin(
+            AsyncAllMixin,
+            AsyncGetMixin,
+        ):
     pass
 
 

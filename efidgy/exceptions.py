@@ -22,5 +22,9 @@ class NotFound(EfidgyException):
     pass
 
 
+class MethodNotAllowed(EfidgyException):
+    pass
+
+
 class InternalServerError(EfidgyException):
     pass
