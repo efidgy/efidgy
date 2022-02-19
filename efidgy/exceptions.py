@@ -2,6 +2,13 @@ class EfidgyException(Exception):
     pass
 
 
+class VersionError(EfidgyException):
+    def __init__(self, server_version):
+        super().__init__(
+            'Update client to version: {}'.format(server_version),
+        )
+
+
 class BadRequest(EfidgyException):
     pass
 
@@ -28,3 +35,9 @@ class MethodNotAllowed(EfidgyException):
 
 class InternalServerError(EfidgyException):
     pass
+
+
+class GeocodeError(EfidgyException):
+    def __init__(self, address):
+        super().__init__(address)
+        self.address = address

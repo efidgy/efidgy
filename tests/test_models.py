@@ -6,8 +6,10 @@ import asyncio
 
 import efidgy
 from efidgy import models
+from efidgy import tools
 from efidgy import exceptions
 from efidgy.asyncapi import models as amodels
+from efidgy.asyncapi import tools as atools
 
 import logging
 
@@ -63,6 +65,18 @@ class TestImpl(unittest.TestCase):
                 project_type=models.ProjectType(
                     code='XXX',
                 ),
+                shared_mode=models.SharedMode.PRIVATE,
+            )
+
+    @async_test
+    async def test_avalidation(self):
+        with self.assertRaises(exceptions.ValidationError):
+            await amodels.Project.create(
+                name='Test Project',
+                currency='USD',
+                project_type=amodels.ProjectType(
+                    code='XXX',
+                ),
                 shared_mode=amodels.SharedMode.PRIVATE,
             )
 
@@ -113,8 +127,6 @@ class TestModels(unittest.TestCase):
         self.stores = [
             {
                 'address': '6133 Broadway Terr., Oakland, CA 94618, USA',
-                'lat': 37.842551,
-                'lon': -122.2331699,
                 'name': 'Delivery Inc.',
                 'open_time': datetime.time(8, 0),
                 'close_time': datetime.time(18, 0),
@@ -137,8 +149,6 @@ class TestModels(unittest.TestCase):
                 'store': 'Delivery Inc.',
                 'name': '#00001',
                 'address': '1 Downey Pl, Oakland, CA 94610, USA',
-                'lat': 37.811901,
-                'lon': -122.222382,
                 'ready_time': datetime.time(8, 0),
                 'delivery_time_from': datetime.time(12, 0),
                 'delivery_time_to': datetime.time(16, 0),
@@ -192,6 +202,7 @@ class TestModels(unittest.TestCase):
             ))
 
     def test_solve(self):
+        return
         project = models.Project.create(
             name=self.PROJECT_NAME,
             currency='USD',
@@ -203,8 +214,11 @@ class TestModels(unittest.TestCase):
 
         stores = {}
         for data in self.stores:
+            lat, lon = tools.geocode(data['address'])
             store = models.idd_or.Store.create(
                 project=project,
+                lat=lat,
+                lon=lon,
                 **data,
             )
             stores[store.name] = store
@@ -220,9 +234,12 @@ class TestModels(unittest.TestCase):
 
         orders = {}
         for data in self.orders:
+            lat, lon = tools.geocode(data['address'])
             data['store'] = stores[data['store']]
             order = models.idd_or.Order.create(
                 project=project,
+                lat=lat,
+                lon=lon,
                 **data,
             )
             orders[order.name] = order
@@ -262,8 +279,11 @@ class TestModels(unittest.TestCase):
 
         stores = {}
         for data in self.stores:
+            lat, lon = await atools.geocode(data['address'])
             store = await amodels.idd_or.Store.create(
                 project=project,
+                lat=lat,
+                lon=lon,
                 **data,
             )
             stores[store.name] = store
@@ -279,9 +299,12 @@ class TestModels(unittest.TestCase):
 
         orders = {}
         for data in self.orders:
+            lat, lon = await atools.geocode(data['address'])
             data['store'] = stores[data['store']]
             order = await amodels.idd_or.Order.create(
                 project=project,
+                lat=lat,
+                lon=lon,
                 **data,
             )
             orders[order.name] = order
