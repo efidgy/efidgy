@@ -168,7 +168,7 @@ class TestModels(unittest.TestCase):
         for schedule in vehicle.route.schedule:
             print('{at}\t{arr}\t{dep}'.format(
                 at=self._repr_point(schedule.start_point),
-                arr=prev_schedule.arrival_time if prev_schedule else None,
+                arr=prev_schedule.arrival_time if prev_schedule else '',
                 dep=schedule.departure_time,
             ))
             prev_schedule = schedule
@@ -176,7 +176,7 @@ class TestModels(unittest.TestCase):
             print('{at}\t{arr}\t{dep}'.format(
                 at=self._repr_point(prev_schedule.end_point),
                 arr=prev_schedule.arrival_time,
-                dep=None,
+                dep='',
             ))
 
     def _print_order(self, order):
