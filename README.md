@@ -34,11 +34,11 @@ lat, lon = efidgy.tools.geocode(store_address)
 store = efidgy.models.idd_or.Store.create(
     project=project,
     address=store_address,
+    lat=lat,
+    lon=lon,
     name='Delivery Inc.',
     open_time=datetime.time(8, 0),
     close_time=datetime.time(18, 0),
-    lat=lat,
-    lon=lon,
 )
 
 vehicle = efidgy.models.idd_or.Vehicle.create(
