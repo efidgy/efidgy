@@ -4,6 +4,8 @@ import datetime
 
 import asyncio
 
+import os
+
 import efidgy
 from efidgy import models
 from efidgy import tools
@@ -12,11 +14,6 @@ from efidgy.asyncapi import models as amodels
 from efidgy.asyncapi import tools as atools
 
 import logging
-
-
-HOST = 'console.efidgy-dev.com'
-EFIDGY_TOKEN = 'myqCTue4jyouzzFty4SfxTst9Z0N5DQD'
-CUSTOMER_CODE = 'demo'
 
 
 def async_test(coro):
@@ -34,9 +31,9 @@ class TestImpl(unittest.TestCase):
 
     def setUp(self):
         self.env = efidgy.Env(
-            host=HOST,
-            token=EFIDGY_TOKEN,
-            code=CUSTOMER_CODE,
+            host=os.environ.get('EFIDGY_HOST', 'console.efidgy.com'),
+            token=os.environ.get('EFIDGY_ACCESS_TOKEN', ''),
+            code=os.environ.get('EFIDGY_CUSTOMER_CODE', 'demo'),
             insecure=True,
         )
         self.env.use()
@@ -113,9 +110,9 @@ class TestModels(unittest.TestCase):
         #     level=logging.DEBUG,
         # )
         self.env = efidgy.Env(
-            host=HOST,
-            token=EFIDGY_TOKEN,
-            code=CUSTOMER_CODE,
+            host=os.environ.get('EFIDGY_HOST', 'console.efidgy.com'),
+            token=os.environ.get('EFIDGY_ACCESS_TOKEN', ''),
+            code=os.environ.get('EFIDGY_CUSTOMER_CODE', 'demo'),
             insecure=True,
         )
         self.env.use()
