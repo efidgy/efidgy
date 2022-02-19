@@ -1,5 +1,6 @@
 import os
 from setuptools import setup
+from setuptools import find_packages
 import efidgy
 
 
@@ -30,10 +31,7 @@ setup(
     project_urls={
         'Documentation': 'https://efidgy.com/docs',
     },
-    packages=[
-        'efidgy',
-        'tests'
-    ],
+    packages=find_packages(),
     install_requires=[
         'httpx>=0.22',
     ],
