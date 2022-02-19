@@ -4,7 +4,7 @@ import efidgy
 
 
 def read(fname):
-    return open(os.path.join(os.path.dirname(__file__), fname)).read()
+    return open(fname, encoding='utf8').read()
 
 
 setup(
@@ -12,15 +12,24 @@ setup(
     version=efidgy.__version__,
     author='Vasily Stepanov',
     author_email='vasily.stepanov@efidgy.com',
-    license='MIT',  # FIXME
-    keywords='',  # FIXME
+    license='GPL3',
+    keywords='efidgy logistics optimization dispatcing vrp',
     url='https://github.com/efidgy/efidgy',
+    description='Python bindings to efidgy services.',
     long_description=read('README.md'),
-    sifiers=[  # FIXME
+    long_description_content_type='text/markdown',
+    classifiers=[
         'Development Status :: 3 - Alpha',
-        'Topic :: Software Development :: Code Generators',
-        'License :: OSI Approved :: MIT License',
+        'Framework :: AsyncIO',
+        'Intended Audience :: Developers',
+        'Intended Audience :: Science/Research',
+        'License :: OSI Approved :: GNU General Public License v3 (GPLv3)',
+        'Operating System :: OS Independent',
+        'Topic :: Software Development :: Libraries',
     ],
+    project_urls={
+        'Documentation': 'https://efidgy.com/docs',
+    },
     packages=[
         'efidgy',
         'tests'
@@ -28,9 +37,5 @@ setup(
     install_requires=[
         'httpx>=0.22',
     ],
-    # entry_points = {
-    #     'console_scripts' : [
-    #         'efidgy = efidgy:main'
-    #     ],
-    # },
+    python_requires='>=3.6',
 )
