@@ -91,7 +91,7 @@ if solutions:
         for schedule in vehicle.route.schedule:
             print('{at}\t{arr}\t{dep}'.format(
                 at=schedule.start_point.name,
-                arr=prev_schedule.arrival_time if prev_schedule else None,
+                arr=prev_schedule.arrival_time if prev_schedule else '',
                 dep=schedule.departure_time,
             ))
             prev_schedule = schedule
@@ -99,6 +99,6 @@ if solutions:
             print('{at}\t{arr}\t{dep}'.format(
                 at=prev_schedule.end_point.name,
                 arr=prev_schedule.arrival_time,
-                dep=None,
+                dep='',
             )
 ```
