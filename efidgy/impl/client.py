@@ -1,6 +1,7 @@
 import json
 import httpx
 from urllib.parse import urlparse
+import re
 
 import efidgy
 from efidgy import exceptions
@@ -19,7 +20,9 @@ class Client:
         )
         if version == 'dev':
             return
-        if version != efidgy.__version__:
+        m = re.match(r'([^-]+)(?:-.+)?', efidgy.__version__)
+        local_version = m[1] if m else efidgy.__version
+        if version != local_version:
             raise exceptions.VersionError(version)
 
     def _url(self, path):
