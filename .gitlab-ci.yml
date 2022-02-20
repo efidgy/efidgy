@@ -3,13 +3,7 @@ default:
 
 before_script:
   - pip install --upgrade setuptools wheel
-
-build:
-  stage: build
-  only:
-    - ci
-  script:
-    - python setup.py develop
+  - python setup.py develop
 
 test:
   stage: test
