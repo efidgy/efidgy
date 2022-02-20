@@ -1,22 +1,24 @@
 default:
   image: python:3
 
-before_script:
-  - pip install --upgrade setuptools wheel
-  - sed -i "s/__version__ = 'dev'/__version__ = '0.12'/" efidgy/__init__.py
-  - python setup.py develop
-
 test:
   stage: test
-  only:
-    - ci
+  rules:
+    - if: $CI_COMMIT_TAG =~ /^version-(.+)$/
   script:
+    - sed -i "s/__version__ = 'dev'/__version__ = '${CI_COMMIT_TAG:8}'/" efidgy/__init__.py
+
+    - python setup.py develop
     - python -m unittest
 
 deploy:
   stage: deploy
-  only:
-    - ci
+  rules:
+    - if: $CI_COMMIT_TAG =~ /^version-(.+)$/
   script:
+    - sed -i "s/__version__ = 'dev'/__version__ = '${CI_COMMIT_TAG:8}'/" efidgy/__init__.py
+
+    - python setup.py develop
+    - pip install --upgrade setuptools wheel
     - python setup.py sdist bdist_wheel
-    - echo python -m twine upload dist/*
+    - python -m twine upload dist/*
