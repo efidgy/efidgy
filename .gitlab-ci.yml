@@ -3,6 +3,7 @@ default:
 
 before_script:
   - pip install --upgrade setuptools wheel
+  - sed -i "s/__version__ = 'dev\'/__version__ = '0.11-2'" efidgy/__init__.py
   - python setup.py develop
 
 test:
