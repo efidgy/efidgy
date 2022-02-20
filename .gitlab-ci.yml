@@ -9,8 +9,7 @@ build:
   only:
     - ci
   script:
-    - python --version
-    - python setup.py sdist bdist_wheel
+    - python setup.py build
 
 test:
   stage: test
@@ -24,4 +23,5 @@ upload:
   only:
     - ci
   script:
+    - python setup.py sdist bdist_wheel
     - echo python -m twine upload dist/*
