@@ -1,16 +1,24 @@
 import os
+import re
 from setuptools import setup
 from setuptools import find_packages
-import efidgy
 
 
 def read(fname):
     return open(fname, encoding='utf8').read()
 
 
+def version():
+    for line in open('efidgy/__init__.py'):
+        m = re.match(r'__version__ = \'(.*)\'', line)
+        if m:
+            return m[1]
+    raise AssertionError('No version found.')
+
+
 setup(
     name='efidgy',
-    version=efidgy.__version__,
+    version=version(),
     author='Vasily Stepanov',
     author_email='vasily.stepanov@efidgy.com',
     license='GPL3',
