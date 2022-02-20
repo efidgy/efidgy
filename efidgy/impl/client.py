@@ -20,8 +20,10 @@ class Client:
         )
         if version == 'dev':
             return
+        if efidgy.__version__ == 'dev':
+            return
         m = re.match(r'([^-]+)(?:-.+)?', efidgy.__version__)
-        local_version = m[1] if m else efidgy.__version
+        local_version = m[1] if m else efidgy.__version__
         if version != local_version:
             raise exceptions.VersionError(version)
 

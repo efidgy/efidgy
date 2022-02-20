@@ -48,6 +48,14 @@ class ModelMeta(type):
             return '<{} {}>'.format(self.__class__.__name__, ' '.join(fields))
         return repr_impl
 
+    @classmethod
+    def _use(cls, Model):
+        def use_impl(env):
+            class ProxyModel(Model):
+                _env = env
+            return ProxyModel
+        return use_impl
+
     def __new__(cls, name, bases, attrs):
         if 'Meta' not in attrs:
             attrs['Meta'] = cls._meta_factory(bases)
@@ -65,11 +73,14 @@ class ModelMeta(type):
                 Model.Meta.primary_key = field
 
         Model.__repr__ = cls._repr()
+        Model.use = cls._use(Model)
 
         return Model
 
 
 class Model(metaclass=ModelMeta):
+    _env = None
+
     class Meta:
         path = None
         fields = []
@@ -97,7 +108,9 @@ class Model(metaclass=ModelMeta):
 
     @classmethod
     def get_env(cls):
-        return Env.current
+        if cls._env is None:
+            return Env.current
+        return cls._env
 
     def get_context(self):
         return {}

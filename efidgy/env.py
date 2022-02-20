@@ -1,3 +1,6 @@
+import os
+
+
 class Env:
     current = None
 
@@ -26,3 +29,11 @@ class Env:
                 **kwargs,
             }
         )
+
+
+Env.current = Env(
+    host=os.environ.get('EFIDGY_HOST', 'console.efidgy.com'),
+    token=os.environ.get('EFIDGY_ACCESS_TOKEN', ''),
+    code=os.environ.get('EFIDGY_CUSTOMER_CODE', 'demo'),
+    insecure=os.environ.get('EFIDGY_INSECURE', '0') != '0',
+)

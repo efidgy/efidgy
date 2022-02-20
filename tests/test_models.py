@@ -29,15 +29,6 @@ def async_test(coro):
 class TestImpl(unittest.TestCase):
     PROJECT_NAME = 'Test Project'
 
-    def setUp(self):
-        self.env = efidgy.Env(
-            host=os.environ.get('EFIDGY_HOST', 'console.efidgy.com'),
-            token=os.environ.get('EFIDGY_ACCESS_TOKEN', ''),
-            code=os.environ.get('EFIDGY_CUSTOMER_CODE', 'demo'),
-            insecure=os.environ.get('EFIDGY_INSECURE', '0') != '0',
-        )
-        self.env.use()
-
     def test_client_errors(self):
         with self.assertRaises(AssertionError):
             models.ProjectType.get(pk='XXX')
@@ -45,10 +36,9 @@ class TestImpl(unittest.TestCase):
             models.Project.get(foo='XXX')
 
     def test_authentication(self):
-        env = self.env.extend(token='XXX')
-        env.use()
+        env = efidgy.Env.current.extend(token='XXX')
         with self.assertRaises(exceptions.AuthenticationFailed):
-            models.Project.get(pk='XXX')
+            models.Project.use(env).get(pk='XXX')
 
     def test_not_found(self):
         with self.assertRaises(exceptions.NotFound):
@@ -64,6 +54,10 @@ class TestImpl(unittest.TestCase):
                 ),
                 shared_mode=models.SharedMode.PRIVATE,
             )
+
+    def test_use(self):
+        models.ProjectType.all()
+        models.ProjectType.use(efidgy.Env.current.extend(code='XXX')).all()
 
     @async_test
     async def test_avalidation(self):
@@ -199,7 +193,6 @@ class TestModels(unittest.TestCase):
             ))
 
     def test_solve(self):
-        return
         project = models.Project.create(
             name=self.PROJECT_NAME,
             currency='USD',

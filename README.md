@@ -6,19 +6,15 @@ Read more at [https://efidgy.com/docs](https://efidgy.com/docs)
 
 Sample usage:
 
+``` sh
+export EFIDGY_CUSTOMER_CODE=code  # https://console.efidgy.com/profile/company
+export EFIDGY_ACCESS_TOKEN=token  # https://console.efidgy.com/profile/tokens
+```
+
 ``` python
-import os
-
 import datetime
-
 import efidgy
 
-
-env = efidgy.Env(
-    token=os.environ.get('EFIDGY_ACCESS_TOKEN', ''),
-    code=os.environ.get('EFIDGY_CUSTOMER_CODE', 'demo'),
-)
-env.use()
 
 project = efidgy.models.Project.create(
     name='Demo',
