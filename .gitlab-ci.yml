@@ -13,8 +13,8 @@ test:
   script:
     - python -m unittest
 
-upload:
-  stage: deploy
+publish:
+  stage: publish
   only:
     - ci
   script:
