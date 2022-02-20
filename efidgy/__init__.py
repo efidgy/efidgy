@@ -15,4 +15,8 @@ __all__ = [
 ]
 
 
-__version__ = '0.11-1'
+##
+# Do not touch this line.
+# See gitlab ci.
+#
+__version__ = 'dev'

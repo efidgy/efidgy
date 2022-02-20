@@ -42,9 +42,10 @@ class Client:
         )
 
     def _auth(self):
-        return {
-            'Authorization': 'Token {}'.format(self.env.token),
-        }
+        ret = {}
+        if self.env.token:
+            ret['Authorization'] = 'Token {}'.format(self.env.token)
+        return ret
 
     def _handle_errors(self, data, status_code):
         if data is None:
