@@ -11,7 +11,7 @@ __all__ = [
 async def geocode(address, env=None):
     if env is None:
         env = Env.current
-    env = env.extend(code='efidgy')
+    env = env.override(code='efidgy')
     c = impl.client.AsyncClient(env)
     data = await c.get('/tools/geocode/?address={}'.format(address))
 

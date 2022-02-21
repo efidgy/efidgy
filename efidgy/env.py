@@ -18,21 +18,19 @@ class Env:
     def use(self):
         Env.current = self
 
-    def extend(self, **kwargs):
-        return Env(
-            **{
-                'host': self.host,
-                'token': self.token,
-                'code': self.code,
-                'unit_system': self.unit_system,
-                'insecure': self.insecure,
-                **kwargs,
-            }
-        )
+    def override(self, **kwargs):
+        return Env(**{
+            'host': self.host,
+            'token': self.token,
+            'code': self.code,
+            'unit_system': self.unit_system,
+            'insecure': self.insecure,
+            **kwargs,
+        })
 
 
 Env.current = Env(
-    host=os.environ.get('EFIDGY_HOST', 'console.efidgy.com'),
+    host=os.environ.get('EFIDGY_HOST', None),
     token=os.environ.get('EFIDGY_ACCESS_TOKEN', ''),
     code=os.environ.get('EFIDGY_CUSTOMER_CODE', 'demo'),
     insecure=os.environ.get('EFIDGY_INSECURE', '0') != '0',

@@ -123,7 +123,7 @@ class Model(metaclass=ModelMeta):
 class EfidgyModel(Model):
     @classmethod
     def get_env(cls):
-        return super().get_env().extend(code='efidgy')
+        return super().get_env().override(code='efidgy')
 
 
 class CustomerModel(Model):
