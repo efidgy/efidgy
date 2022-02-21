@@ -36,6 +36,9 @@ class Client:
         if path.endswith('/'):
             path = path[:-1]
         args.append(o.query)
+        assert self.env.code, (
+            'No customer code defined.'
+        )
         return 'https://{host}/api/{code}{path}/?{args}'.format(
             host=self.env.host,
             code=self.env.code,

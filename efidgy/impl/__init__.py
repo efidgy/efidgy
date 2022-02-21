@@ -109,7 +109,7 @@ class Model(metaclass=ModelMeta):
     @classmethod
     def get_env(cls):
         if cls._env is None:
-            return Env.current
+            return Env.default
         return cls._env
 
     def get_context(self):

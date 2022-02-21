@@ -10,7 +10,7 @@ __all__ = [
 
 def geocode(address, env=None):
     if env is None:
-        env = Env.current
+        env = Env.default
     env = env.override(code='efidgy')
     c = impl.client.SyncClient(env)
     data = c.get('/tools/geocode/?address={}'.format(address))
