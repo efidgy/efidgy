@@ -1,10 +1,11 @@
+import asyncio
 import json
-import httpx
-from urllib.parse import urlparse
 import re
+import ssl
+import urllib.parse
+import urllib.request
 
 import efidgy
-from efidgy import exceptions
 
 
 class Client:
@@ -12,28 +13,23 @@ class Client:
 
     def __init__(self, env):
         self.env = env
-
-    def _compare_version(self, data):
-        version = data.get('version') if data else None
-        assert version, (
-            'Unable to fetch server version.'
-        )
-        if version == 'dev':
-            return
-        m = re.match(r'([^-]+)(?:-.+)?', efidgy.__version__)
-        local_version = m[1] if m else efidgy.__version
-        if version != local_version:
-            raise exceptions.VersionError(version)
+        self._context = None
+        if self.env.insecure:
+            self._context = ssl._create_unverified_context()
 
     def _url(self, path):
         args = ['time_format=clock_24']
         if self.env.unit_system is not None:
             args.append('unit_system={}'.format(self.env.unit_system))
-        o = urlparse(path)
+        o = urllib.parse.urlparse(path)
         path = o.path
         if path.endswith('/'):
             path = path[:-1]
-        args.append(o.query)
+        if o.query:
+            args.append(o.query)
+        assert self.env.code, (
+            'No customer code defined.'
+        )
         return 'https://{host}/api/{code}{path}/?{args}'.format(
             host=self.env.host,
             code=self.env.code,
@@ -41,204 +37,117 @@ class Client:
             args='&'.join(args),
         )
 
-    def _auth(self):
-        ret = {}
+    def _auth(self, request):
         if self.env.token:
-            ret['Authorization'] = 'Token {}'.format(self.env.token)
-        return ret
+            request.add_header(
+                'Authorization',
+                'Token {}'.format(self.env.token),
+            )
 
-    def _handle_errors(self, data, status_code):
-        if data is None:
-            data = {}
-        if status_code == 400:
-            detail = data.get('detail')
-            if detail is not None:
-                raise exceptions.BadRequest(detail)
-            raise exceptions.ValidationError(data)
-        if status_code == 401:
-            detail = data.get(
-                'detail',
-                'Authentication failed.',
-            )
-            raise exceptions.AuthenticationFailed(detail)
-        if status_code == 403:
-            detail = data.get(
-                'detail',
-                'Permission denied.',
-            )
-            raise exceptions.PermissionDenied(detail)
-        if status_code == 404:
-            detail = data.get('detail', 'Not found.')
-            raise exceptions.NotFound(detail)
-        if status_code == 405:
-            detail = data.get('detail', 'Method not allowed.')
-            raise exceptions.MethodNotAllowed(detail)
-        if status_code >= 500 and status_code < 600:
-            raise exceptions.InternalServerError()
-        raise RuntimeError(
-            'Unhandled response code: {}'.format(status_code),
+    def _check_api_version(self):
+        if self._verified:
+            return
+
+        url = 'https://{}/efidgy_version.json'.format(self.env.host)
+        try:
+            with urllib.request.urlopen(url, context=self._context) as f:
+                data = json.load(f)
+        except (urllib.error.HTTPError, json.decoder.JSONDecodeError):
+            data = None
+
+        version = data.get('version') if data else None
+        assert version, (
+            'Unable to fetch server version.'
         )
+        if version == 'dev':
+            return
+        if efidgy.__version__ == 'dev':
+            return
+        m = re.match(r'([^-]+)(?:-.+)?', efidgy.__version__)
+        local_version = m[1] if m else efidgy.__version__
+        if version != local_version:
+            raise efidgy.exceptions.VersionError(version)
+
+        type(self)._verified = True
+
+    def _urlopen(self, url, data, method):
+        self._check_api_version()
+
+        data = json.dumps(data).encode('utf-8') if data is not None else None
+
+        req = urllib.request.Request(url, data=data, method=method)
+        self._auth(req)
+        if data:
+            req.add_header('Content-Type', 'application/json')
+
+        try:
+            with urllib.request.urlopen(req, context=self._context) as f:
+                return json.load(f)
+        except urllib.error.HTTPError as e:
+            try:
+                data = json.load(e)
+            except json.decoder.JSONDecodeError:
+                data = {}
+            if e.code == 400:
+                detail = data.get('detail')
+                if detail is not None:
+                    raise efidgy.exceptions.BadRequest(detail)
+                raise efidgy.exceptions.ValidationError(data)
+            if e.code == 401:
+                detail = data.get(
+                    'detail',
+                    'Authentication failed.',
+                )
+                raise efidgy.exceptions.AuthenticationFailed(detail)
+            if e.code == 403:
+                detail = data.get(
+                    'detail',
+                    'Permission denied.',
+                )
+                raise efidgy.exceptions.PermissionDenied(detail)
+            if e.code == 404:
+                detail = data.get('detail', 'Not found.')
+                raise efidgy.exceptions.NotFound(detail)
+            if e.code == 405:
+                detail = data.get('detail', 'Method not allowed.')
+                raise efidgy.exceptions.MethodNotAllowed(detail)
+            if e.code >= 500 and e.code < 600:
+                raise efidgy.exceptions.InternalServerError()
+            raise
+        except json.decoder.JSONDecodeError:
+            return None
 
 
 class SyncClient(Client):
-    def _client(self):
-        return httpx.Client(
-            verify=not self.env.insecure,
-            event_hooks={'response': [self._handle_response]}
-        )
-
-    def _load_response(self, response):
-        try:
-            return json.load(response)
-        except json.decoder.JSONDecodeError:
-            return None
-
-    def _check_version(self, client):
-        if self._verified:
-            return
-
-        response = client.get(
-            'https://{}/efidgy_version.json'.format(self.env.host),
-        )
-        self._compare_version(self._load_response(response))
-
-        type(self)._verified = True
-
-    def _handle_response(self, response):
-        if response.status_code >= 200 and response.status_code < 300:
-            return
-        data = self._load_response(response)
-        self._handle_errors(data, response.status_code)
-
     def get(self, path):
-        with self._client() as client:
-            self._check_version(client)
-            url = self._url(path)
-            response = client.get(
-                url,
-                headers=self._auth(),
-            )
-            return self._load_response(response)
+        return self._urlopen(self._url(path), None, 'GET')
 
     def post(self, path, data):
-        with self._client() as client:
-            self._check_version(client)
-            url = self._url(path)
-            data = json.dumps(data) if data is not None else None
-            response = client.post(
-                url,
-                content=data,
-                headers={
-                    'Content-Type': 'application/json',
-                    **self._auth(),
-                }
-            )
-            return self._load_response(response)
+        return self._urlopen(self._url(path), data, 'POST')
 
     def put(self, path, data):
-        with self._client() as client:
-            self._check_version(client)
-            url = self._url(path)
-            data = json.dumps(data) if data is not None else None
-            response = client.put(
-                url,
-                content=data,
-                headers={
-                    'Content-Type': 'application/json',
-                    **self._auth(),
-                }
-            )
-            return self._load_response(response)
+        return self._urlopen(self._url(path), data, 'PUT')
 
     def delete(self, path):
-        with self._client() as client:
-            self._check_version(client)
-            url = self._url(path)
-            client.delete(
-                url,
-                headers={
-                    'Content-Type': 'application/json',
-                    **self._auth(),
-                }
-            )
+        return self._urlopen(self._url(path), None, 'DELETE')
 
 
 class AsyncClient(Client):
-    def _client(self):
-        return httpx.AsyncClient(
-            verify=not self.env.insecure,
-            event_hooks={'response': [self._handle_response]}
+    async def _async_urlopen(self, *args):
+        return await asyncio.get_event_loop().run_in_executor(
+            None,
+            self._urlopen,
+            *args,
         )
-
-    async def _load_response(self, response):
-        try:
-            return json.loads(await response.aread())
-        except json.decoder.JSONDecodeError:
-            return None
-
-    async def _check_version(self, client):
-        if self._verified:
-            return
-
-        response = await client.get(
-            'https://{}/efidgy_version.json'.format(self.env.host),
-        )
-        self._compare_version(await self._load_response(response))
-
-        type(self)._verified = True
-
-    async def _handle_response(self, response):
-        if response.status_code >= 200 and response.status_code < 300:
-            return
-        data = await self._load_response(response)
-        self._handle_errors(data, response.status_code)
 
     async def get(self, path):
-        async with self._client() as client:
-            await self._check_version(client)
-            url = self._url(path)
-            response = await client.get(
-                url,
-                headers=self._auth(),
-            )
-            return await self._load_response(response)
+        return await self._async_urlopen(self._url(path), None, 'GET')
 
     async def post(self, path, data):
-        async with self._client() as client:
-            await self._check_version(client)
-            url = self._url(path)
-            response = await client.post(
-                url,
-                content=json.dumps(data),
-                headers={
-                    'Content-Type': 'application/json',
-                    **self._auth(),
-                }
-            )
-            return await self._load_response(response)
+        return await self._async_urlopen(self._url(path), data, 'POST')
 
     async def put(self, path, data):
-        async with self._client() as client:
-            await self._check_version(client)
-            url = self._url(path)
-            response = await client.put(
-                url,
-                content=json.dumps(data),
-                headers={
-                    'Content-Type': 'application/json',
-                    **self._auth(),
-                }
-            )
-            return await self._load_response(response)
+        return await self._async_urlopen(self._url(path), data, 'PUT')
 
     async def delete(self, path):
-        async with self._client() as client:
-            await self._check_version(client)
-            url = self._url(path)
-            await client.delete(
-                url,
-                headers={
-                    'Content-Type': 'application/json',
-                    **self._auth(),
-                }
-            )
+        return await self._async_urlopen(self._url(path), None, 'DELETE')
