@@ -1,6 +1,5 @@
-from efidgy import exceptions
+import efidgy
 from efidgy import impl
-from efidgy.env import Env
 
 import urllib.parse
 
@@ -12,7 +11,7 @@ __all__ = [
 
 def geocode(address, env=None):
     if env is None:
-        env = Env.default
+        env = efidgy.env
     env = env.override(code='efidgy')
     c = impl.client.SyncClient(env)
     data = c.get(
@@ -22,6 +21,6 @@ def geocode(address, env=None):
     lat = data.get('lat')
     lon = data.get('lon')
     if lat is None or lon is None:
-        raise exceptions.GeocodeError(address)
+        raise efidgy.exceptions.GeocodeError(address)
 
     return lat, lon

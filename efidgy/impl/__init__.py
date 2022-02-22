@@ -1,6 +1,6 @@
 import logging
 
-from efidgy import Env
+import efidgy
 
 from . import client
 from . import fields
@@ -109,8 +109,20 @@ class Model(metaclass=ModelMeta):
     @classmethod
     def get_env(cls):
         if cls._env is None:
-            return Env.default
+            return efidgy.env
         return cls._env
+
+    def __eq__(self, other):
+        if type(self) != type(other):
+            return False
+        if (
+            self.Meta.primary_key is None
+            or other.Meta.primary_key is None
+        ):
+            return self == other
+        self_pk = getattr(self, self.Meta.primary_key.name)
+        other_pk = getattr(other, other.Meta.primary_key.name)
+        return self_pk == other_pk
 
     def get_context(self):
         return {}
@@ -190,6 +202,23 @@ class SyncAllMixin:
             ret.append(cls.decode(data, **kwargs))
         return ret
 
+    @classmethod
+    def filter(cls, **kwargs):
+        ret = []
+        for o in cls.all(**kwargs):
+            for field, value in kwargs.items():
+                if getattr(o, field, None) != value:
+                    continue
+                ret.append(o)
+        return ret
+
+    @classmethod
+    def first(cls, **kwargs):
+        ret = cls.filter(**kwargs)
+        if not ret:
+            return None
+        return ret[0]
+
 
 class SyncGetMixin:
     @classmethod
@@ -265,6 +294,23 @@ class AsyncAllMixin:
         for data in await c.get(path):
             ret.append(cls.decode(data, **kwargs))
         return ret
+
+    @classmethod
+    async def filter(cls, **kwargs):
+        ret = []
+        for o in await cls.all(**kwargs):
+            for field, value in kwargs.items():
+                if getattr(o, field, None) != value:
+                    continue
+                ret.append(o)
+        return ret
+
+    @classmethod
+    async def first(cls, **kwargs):
+        ret = await cls.filter(**kwargs)
+        if not ret:
+            return None
+        return ret[0]
 
 
 class AsyncGetMixin:

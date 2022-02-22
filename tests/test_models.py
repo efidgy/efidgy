@@ -4,8 +4,6 @@ import datetime
 
 import asyncio
 
-import os
-
 import efidgy
 from efidgy import models
 from efidgy import tools
@@ -36,7 +34,7 @@ class TestImpl(unittest.TestCase):
             models.Project.get(foo='XXX')
 
     def test_authentication(self):
-        env = efidgy.Env.default.override(token='XXX')
+        env = efidgy.env.override(token='XXX')
         with self.assertRaises(exceptions.AuthenticationFailed):
             models.Project.use(env).get(pk='XXX')
 
@@ -47,7 +45,7 @@ class TestImpl(unittest.TestCase):
     def test_validation(self):
         with self.assertRaises(exceptions.ValidationError):
             models.Project.create(
-                name='Test Project',
+                name=self.PROJECT_NAME,
                 currency='USD',
                 project_type=models.ProjectType(
                     code='XXX',
@@ -57,13 +55,25 @@ class TestImpl(unittest.TestCase):
 
     def test_use(self):
         models.ProjectType.all()
-        models.ProjectType.use(efidgy.Env.default.override(code='XXX')).all()
+        models.ProjectType.use(efidgy.env.override(code='XXX')).all()
+
+    def test_filter(self):
+        project = models.Project.create(
+            name=self.PROJECT_NAME,
+            currency='USD',
+            project_type=models.ProjectType(
+                code=models.ProjectTypeCode.IDD_OR,
+            ),
+            shared_mode=models.SharedMode.PRIVATE,
+        )
+        self.assertEqual(len(models.Project.filter(name=self.PROJECT_NAME)), 1)
+        self.assertEqual(models.Project.first(name=self.PROJECT_NAME), project)
 
     @async_test
     async def test_avalidation(self):
         with self.assertRaises(exceptions.ValidationError):
             await amodels.Project.create(
-                name='Test Project',
+                name=self.PROJECT_NAME,
                 currency='USD',
                 project_type=amodels.ProjectType(
                     code='XXX',
