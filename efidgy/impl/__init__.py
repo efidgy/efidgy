@@ -1,6 +1,6 @@
 import logging
 
-from efidgy import Env
+import efidgy
 
 from . import client
 from . import fields
@@ -109,7 +109,7 @@ class Model(metaclass=ModelMeta):
     @classmethod
     def get_env(cls):
         if cls._env is None:
-            return Env.default
+            return efidgy.env
         return cls._env
 
     def get_context(self):

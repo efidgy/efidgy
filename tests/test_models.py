@@ -36,7 +36,7 @@ class TestImpl(unittest.TestCase):
             models.Project.get(foo='XXX')
 
     def test_authentication(self):
-        env = efidgy.Env.default.override(token='XXX')
+        env = efidgy.env.override(token='XXX')
         with self.assertRaises(exceptions.AuthenticationFailed):
             models.Project.use(env).get(pk='XXX')
 
@@ -57,7 +57,7 @@ class TestImpl(unittest.TestCase):
 
     def test_use(self):
         models.ProjectType.all()
-        models.ProjectType.use(efidgy.Env.default.override(code='XXX')).all()
+        models.ProjectType.use(efidgy.env.override(code='XXX')).all()
 
     @async_test
     async def test_avalidation(self):
