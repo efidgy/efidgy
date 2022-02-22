@@ -27,6 +27,11 @@ def async_test(coro):
 class TestImpl(unittest.TestCase):
     PROJECT_NAME = 'Test Project'
 
+    def setUp(self):
+        projects = models.Project.filter(name=self.PROJECT_NAME)
+        for project in projects:
+            project.delete()
+
     def test_client_errors(self):
         with self.assertRaises(AssertionError):
             models.ProjectType.get(pk='XXX')

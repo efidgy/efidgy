@@ -206,9 +206,12 @@ class SyncAllMixin:
     def filter(cls, **kwargs):
         ret = []
         for o in cls.all(**kwargs):
+            matched = True
             for field, value in kwargs.items():
                 if getattr(o, field, None) != value:
-                    continue
+                    matched = False
+                    break
+            if matched:
                 ret.append(o)
         return ret
 
@@ -299,9 +302,12 @@ class AsyncAllMixin:
     async def filter(cls, **kwargs):
         ret = []
         for o in await cls.all(**kwargs):
+            matched = True
             for field, value in kwargs.items():
                 if getattr(o, field, None) != value:
-                    continue
+                    matched = False
+                    break
+            if matched:
                 ret.append(o)
         return ret
 
