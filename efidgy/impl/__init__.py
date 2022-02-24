@@ -107,7 +107,7 @@ class Model(metaclass=ModelMeta):
         return cls.Meta.path
 
     @classmethod
-    def get_env(cls):
+    def _get_env(cls):
         if cls._env is None:
             return efidgy.env
         return cls._env
@@ -134,8 +134,8 @@ class Model(metaclass=ModelMeta):
 
 class EfidgyModel(Model):
     @classmethod
-    def get_env(cls):
-        return super().get_env().override(code='efidgy')
+    def _get_env(cls):
+        return super()._get_env().override(code='efidgy')
 
 
 class CustomerModel(Model):
@@ -195,7 +195,7 @@ class SolutionModel(ProjectModel):
 class SyncAllMixin:
     @classmethod
     def all(cls, **kwargs):
-        c = client.SyncClient(cls.get_env())
+        c = client.SyncClient(cls._get_env())
         path = cls.get_path(kwargs)
         ret = []
         for data in c.get(path):
@@ -226,7 +226,7 @@ class SyncAllMixin:
 class SyncGetMixin:
     @classmethod
     def get(cls, **kwargs):
-        c = client.SyncClient(cls.get_env())
+        c = client.SyncClient(cls._get_env())
         path = cls.get_path(kwargs)
         pk_name = cls.Meta.primary_key.name
         pk = kwargs.get(pk_name, None)
@@ -251,7 +251,7 @@ class SyncGetMixin:
 class SyncCreateMixin:
     @classmethod
     def create(cls, **kwargs):
-        c = client.SyncClient(cls.get_env())
+        c = client.SyncClient(cls._get_env())
         path = cls.get_path(kwargs)
         obj = cls(**kwargs)
         data = c.post(path, cls.encode(obj))
@@ -260,14 +260,14 @@ class SyncCreateMixin:
 
 class SyncSaveMixin:
     def save(self):
-        c = client.SyncClient(self.get_env())
+        c = client.SyncClient(self._get_env())
         path = self.get_path(self.get_context())
         c.put('{}/{}'.format(path, self.pk), self.encode(self))
 
 
 class SyncDeleteMixin:
     def delete(self):
-        c = client.SyncClient(self.get_env())
+        c = client.SyncClient(self._get_env())
         path = self.get_path(self.get_context())
         c.delete('{}/{}'.format(path, self.pk))
 
@@ -291,7 +291,7 @@ class SyncChangeMixin(
 class AsyncAllMixin:
     @classmethod
     async def all(cls, **kwargs):
-        c = client.AsyncClient(cls.get_env())
+        c = client.AsyncClient(cls._get_env())
         path = cls.get_path(kwargs)
         ret = []
         for data in await c.get(path):
@@ -322,7 +322,7 @@ class AsyncAllMixin:
 class AsyncGetMixin:
     @classmethod
     async def get(cls, **kwargs):
-        c = client.AsyncClient(cls.get_env())
+        c = client.AsyncClient(cls._get_env())
         path = cls.get_path(kwargs)
         pk_name = cls.Meta.primary_key.name
         pk = kwargs.get(pk_name, None)
@@ -347,7 +347,7 @@ class AsyncGetMixin:
 class AsyncCreateMixin:
     @classmethod
     async def create(cls, **kwargs):
-        c = client.AsyncClient(cls.get_env())
+        c = client.AsyncClient(cls._get_env())
         path = cls.get_path(kwargs)
         obj = cls(**kwargs)
         data = await c.post(path, cls.encode(obj))
@@ -356,7 +356,7 @@ class AsyncCreateMixin:
 
 class AsyncSaveMixin:
     async def save(self, **kwargs):
-        c = client.AsyncClient(self.get_env())
+        c = client.AsyncClient(self._get_env())
         path = self.get_path(self.get_context())
         await c.put(
             '{}/{}'.format(path, self.pk),
@@ -366,7 +366,7 @@ class AsyncSaveMixin:
 
 class AsyncDeleteMixin:
     async def delete(self, **kwargs):
-        c = client.AsyncClient(self.get_env())
+        c = client.AsyncClient(self._get_env())
         path = self.get_path(self.get_context())
         await c.delete('{}/{}'.format(path, self.pk))
 
