@@ -91,7 +91,7 @@ class IProject(impl.CustomerModel):
 
     def _get_computation_path(self):
         return '{}/{}/computation'.format(
-            self.get_path(self.get_context()),
+            self._get_path(self._get_context()),
             self.pk,
         )
 

@@ -103,7 +103,7 @@ class Model(metaclass=ModelMeta):
         return ret
 
     @classmethod
-    def get_path(cls, context):
+    def _get_path(cls, context):
         return cls.Meta.path
 
     @classmethod
@@ -124,7 +124,7 @@ class Model(metaclass=ModelMeta):
         other_pk = getattr(other, other.Meta.primary_key.name)
         return self_pk == other_pk
 
-    def get_context(self):
+    def _get_context(self):
         return {}
 
     def __init__(self, **kwargs):
@@ -144,7 +144,7 @@ class CustomerModel(Model):
 
 class ProjectModel(Model):
     @classmethod
-    def get_path(cls, context):
+    def _get_path(cls, context):
         project = context.get('project')
         assert project is not None, (
             'Project not passed.'
@@ -154,9 +154,9 @@ class ProjectModel(Model):
             path=cls.Meta.path,
         )
 
-    def get_context(self):
+    def _get_context(self):
         return {
-            **super().get_context(),
+            **super()._get_context(),
             'project': self.project,
         }
 
@@ -170,10 +170,10 @@ class ProjectModel(Model):
 
 class SolutionModel(ProjectModel):
     @classmethod
-    def get_path(cls, context):
+    def _get_path(cls, context):
         solution = context.get('solution')
         if solution is None:
-            return super().get_path(context)
+            return super()._get_path(context)
         project = context.get('project')
         return '/projects/{project}/solutions/{solution}{path}'.format(
             project=project.pk,
@@ -181,9 +181,9 @@ class SolutionModel(ProjectModel):
             path=cls.Meta.path,
         )
 
-    def get_context(self):
+    def _get_context(self):
         return {
-            **super().get_context(),
+            **super()._get_context(),
             'solution': self.solution,
         }
 
@@ -196,7 +196,7 @@ class SyncAllMixin:
     @classmethod
     def all(cls, **kwargs):
         c = client.SyncClient(cls._get_env())
-        path = cls.get_path(kwargs)
+        path = cls._get_path(kwargs)
         ret = []
         for data in c.get(path):
             ret.append(cls._decode(data, **kwargs))
@@ -227,7 +227,7 @@ class SyncGetMixin:
     @classmethod
     def get(cls, **kwargs):
         c = client.SyncClient(cls._get_env())
-        path = cls.get_path(kwargs)
+        path = cls._get_path(kwargs)
         pk_name = cls.Meta.primary_key.name
         pk = kwargs.get(pk_name, None)
         assert pk is not None, (
@@ -240,7 +240,7 @@ class SyncGetMixin:
         pk_name = self.Meta.primary_key.name
         pk = getattr(self, pk_name, None)
         kwargs = {
-            **self.get_context(),
+            **self._get_context(),
             pk_name: pk,
         }
         obj = self.get(**kwargs)
@@ -252,7 +252,7 @@ class SyncCreateMixin:
     @classmethod
     def create(cls, **kwargs):
         c = client.SyncClient(cls._get_env())
-        path = cls.get_path(kwargs)
+        path = cls._get_path(kwargs)
         obj = cls(**kwargs)
         data = c.post(path, cls._encode(obj))
         return cls._decode(data, **kwargs)
@@ -261,14 +261,14 @@ class SyncCreateMixin:
 class SyncSaveMixin:
     def save(self):
         c = client.SyncClient(self._get_env())
-        path = self.get_path(self.get_context())
+        path = self._get_path(self._get_context())
         c.put('{}/{}'.format(path, self.pk), self._encode(self))
 
 
 class SyncDeleteMixin:
     def delete(self):
         c = client.SyncClient(self._get_env())
-        path = self.get_path(self.get_context())
+        path = self._get_path(self._get_context())
         c.delete('{}/{}'.format(path, self.pk))
 
 
@@ -292,7 +292,7 @@ class AsyncAllMixin:
     @classmethod
     async def all(cls, **kwargs):
         c = client.AsyncClient(cls._get_env())
-        path = cls.get_path(kwargs)
+        path = cls._get_path(kwargs)
         ret = []
         for data in await c.get(path):
             ret.append(cls._decode(data, **kwargs))
@@ -323,7 +323,7 @@ class AsyncGetMixin:
     @classmethod
     async def get(cls, **kwargs):
         c = client.AsyncClient(cls._get_env())
-        path = cls.get_path(kwargs)
+        path = cls._get_path(kwargs)
         pk_name = cls.Meta.primary_key.name
         pk = kwargs.get(pk_name, None)
         assert pk is not None, (
@@ -336,7 +336,7 @@ class AsyncGetMixin:
         pk_name = self.Meta.primary_key.name
         pk = getattr(self, pk_name, None)
         kwargs = {
-            **self.get_context(),
+            **self._get_context(),
             pk_name: pk,
         }
         obj = await self.get(**kwargs)
@@ -348,7 +348,7 @@ class AsyncCreateMixin:
     @classmethod
     async def create(cls, **kwargs):
         c = client.AsyncClient(cls._get_env())
-        path = cls.get_path(kwargs)
+        path = cls._get_path(kwargs)
         obj = cls(**kwargs)
         data = await c.post(path, cls._encode(obj))
         return cls._decode(data, **kwargs)
@@ -357,7 +357,7 @@ class AsyncCreateMixin:
 class AsyncSaveMixin:
     async def save(self, **kwargs):
         c = client.AsyncClient(self._get_env())
-        path = self.get_path(self.get_context())
+        path = self._get_path(self._get_context())
         await c.put(
             '{}/{}'.format(path, self.pk),
             self._encode(self),
@@ -367,7 +367,7 @@ class AsyncSaveMixin:
 class AsyncDeleteMixin:
     async def delete(self, **kwargs):
         c = client.AsyncClient(self._get_env())
-        path = self.get_path(self.get_context())
+        path = self._get_path(self._get_context())
         await c.delete('{}/{}'.format(path, self.pk))
 
 
