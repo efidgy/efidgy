@@ -12,10 +12,10 @@ class Field:
         self.required = required
         self.primary_key = primary_key
 
-    def decode(self, value, **kwargs):
+    def _decode(self, value, **kwargs):
         return value
 
-    def encode(self, value):
+    def _encode(self, value):
         return value
 
 
@@ -42,7 +42,7 @@ class PrimaryKey(CharField):
 
 
 class TimeField(Field):
-    def decode(self, value, **kwargs):
+    def _decode(self, value, **kwargs):
         if value is None:
             return None
         m = re.match(r'(\d{2}):(\d{2})', value)
@@ -51,14 +51,14 @@ class TimeField(Field):
         )
         return datetime.time(int(m[1]), int(m[2]))
 
-    def encode(self, value):
+    def _encode(self, value):
         if value is None:
             return None
         return '{:02d}:{:02d}'.format(value.hour, value.minute)
 
 
 class DurationField(Field):
-    def decode(self, value, **kwargs):
+    def _decode(self, value, **kwargs):
         if value is None:
             return None
         m = re.match(r'(\d+):(\d{2})', value)
@@ -67,7 +67,7 @@ class DurationField(Field):
         )
         return datetime.timedelta(hours=int(m[1]), minutes=int(m[2]))
 
-    def encode(self, value):
+    def _encode(self, value):
         if value is None:
             return None
         seconds = value.total_seconds()
@@ -91,18 +91,18 @@ class ObjectField(Field):
             self._model = routines.import_string(self._model)
         return self._model
 
-    def decode(self, value, **kwargs):
+    def _decode(self, value, **kwargs):
         if value is None:
             return None
-        return self.model.decode(value, **kwargs)
+        return self.model._decode(value, **kwargs)
 
-    def encode(self, value):
+    def _encode(self, value):
         if value is None:
             return None
         assert isinstance(value, self.model), (
             '{} instance expected: {}'.format(self.model, type(value))
         )
-        return self.model.encode(value)
+        return self.model._encode(value)
 
 
 class PolymorphObjectField(Field):
@@ -128,13 +128,13 @@ class PolymorphObjectField(Field):
 
         return model
 
-    def decode(self, value, **kwargs):
+    def _decode(self, value, **kwargs):
         if value is None:
             return None
 
-        return self._get_model(value).decode(value, **kwargs)
+        return self._get_model(value)._decode(value, **kwargs)
 
-    def encode(self, value):
+    def _encode(self, value):
         if value is None:
             return None
 
@@ -144,7 +144,7 @@ class PolymorphObjectField(Field):
             '{} instance expected: {}'.format(model, type(value))
         )
 
-        return model.encode(value)
+        return model._encode(value)
 
 
 class ListField(Field):
@@ -158,18 +158,18 @@ class ListField(Field):
             self._item = routines.import_string(self._item)
         return self._item
 
-    def decode(self, value, **kwargs):
+    def _decode(self, value, **kwargs):
         if value is None:
             return None
         ret = []
         for item in value:
-            ret.append(self.item.decode(item, **kwargs))
+            ret.append(self.item._decode(item, **kwargs))
         return ret
 
-    def encode(self, value):
+    def _encode(self, value):
         if value is None:
             return None
         ret = []
         for item in value:
-            ret.append(self.item.encode(item))
+            ret.append(self.item._encode(item))
         return ret
