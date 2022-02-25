@@ -28,6 +28,9 @@ class TestImpl(unittest.TestCase):
     PROJECT_NAME = 'Test Project'
 
     def setUp(self):
+        efidgy.env = efidgy.env.override(
+            unit_system=efidgy.models.UnitSystem.IMPERIAL,
+        )
         projects = models.Project.filter(name=self.PROJECT_NAME)
         for project in projects:
             project.delete()
