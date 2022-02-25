@@ -21,16 +21,20 @@ class Point(models.idd_or.IPoint):
     pass
 
 
-class Store(impl.AsyncChangeMixin, models.idd_or.IStore):
-    pass
+class Store(models.idd_or.IStore):
+    class service(impl.service.AsyncChangeMixin, impl.service.ProjectService):
+        path = '/stores'
 
 
 class Path(models.idd_or.IPath):
     pass
 
 
-class Order(impl.AsyncChangeMixin, models.idd_or.IOrder):
+class Order(models.idd_or.IOrder):
     store = impl.fields.ObjectField(model=Store)
+
+    class service(impl.service.AsyncChangeMixin, impl.service.SolutionService):
+        path = '/orders'
 
 
 class OrderSchedule(models.idd_or.IOrderSchedule):
@@ -81,6 +85,9 @@ class VehicleRoute(models.idd_or.IVehicleRoute):
     pass
 
 
-class Vehicle(impl.AsyncChangeMixin, models.idd_or.IVehicle):
+class Vehicle(models.idd_or.IVehicle):
     store = impl.fields.ObjectField(model=Store)
     route = impl.fields.ObjectField(model=VehicleRoute)
+
+    class service(impl.service.AsyncChangeMixin, impl.service.SolutionService):
+        path = '/vehicles'

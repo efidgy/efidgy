@@ -20,7 +20,7 @@ class PointType:
     ORDER = 'order'
 
 
-class IPoint(impl.Model):
+class IPoint(impl.model.Model):
     pk = impl.fields.PrimaryKey()
     address = impl.fields.CharField()
     enabled = impl.fields.BooleanField()
@@ -29,24 +29,21 @@ class IPoint(impl.Model):
     point_type = impl.fields.CharField()
 
 
-class IStore(IPoint, impl.ProjectModel):
+class IStore(IPoint):
     name = impl.fields.CharField()
     description = impl.fields.CharField()
     open_time = impl.fields.TimeField()
     close_time = impl.fields.TimeField()
     issues = impl.fields.DictField()
 
-    class Meta:
-        path = '/stores'
 
-
-class IPath(impl.Model):
+class IPath(impl.model.Model):
     pk = impl.fields.PrimaryKey()
     distance = impl.fields.FloatField()
     directions = impl.fields.CharField()
 
 
-class IOrderRoute(impl.Model):
+class IOrderRoute(impl.model.Model):
     vehicle = impl.fields.ObjectField(model='efidgy.models.idd_or.IVehicle')
     schedule = impl.fields.ListField(
         item='efidgy.models.idd_or.IOrderSchedule',
@@ -54,7 +51,7 @@ class IOrderRoute(impl.Model):
     issues = impl.fields.DictField()
 
 
-class IOrder(IPoint, impl.SolutionModel):
+class IOrder(IPoint):
     name = impl.fields.CharField()
     description = impl.fields.CharField()
     features = impl.fields.ListField(item=impl.fields.CharField())
@@ -70,11 +67,8 @@ class IOrder(IPoint, impl.SolutionModel):
     route = impl.fields.ObjectField(model=IOrderRoute)
     issues = impl.fields.DictField()
 
-    class Meta:
-        path = '/orders'
 
-
-class ISchedule:
+class ISchedule(impl.model.Model):
     pk = impl.fields.PrimaryKey()
     start_point = impl.fields.PolymorphObjectField(
         lookup_field='point_type',
@@ -95,16 +89,16 @@ class ISchedule:
     path = impl.fields.ObjectField(model=IPath)
 
 
-class IOrderSchedule(ISchedule, impl.Model):
+class IOrderSchedule(ISchedule):
     issues = impl.fields.DictField()
 
 
-class IVehicleSchedule(ISchedule, impl.Model):
+class IVehicleSchedule(ISchedule):
     orders = impl.fields.ListField(item=IOrder)
     issues = impl.fields.DictField()
 
 
-class IVehicleRoute(impl.Model):
+class IVehicleRoute(impl.model.Model):
     schedule = impl.fields.ListField(item=IVehicleSchedule)
     distance = impl.fields.FloatField()
     distance_salary = impl.fields.FloatField()
@@ -116,7 +110,7 @@ class IVehicleRoute(impl.Model):
     issues = impl.fields.DictField()
 
 
-class IVehicle(impl.SolutionModel):
+class IVehicle(impl.model.Model):
     pk = impl.fields.PrimaryKey()
     name = impl.fields.CharField()
     description = impl.fields.CharField()
@@ -136,25 +130,26 @@ class IVehicle(impl.SolutionModel):
     route = impl.fields.ObjectField(model=IVehicleRoute)
     issues = impl.fields.DictField()
 
-    class Meta:
-        path = '/vehicles'
-
 
 class Point(IPoint):
     pass
 
 
-class Store(impl.SyncChangeMixin, IStore):
-    pass
+class Store(IStore):
+    class service(impl.service.SyncChangeMixin, impl.service.ProjectService):
+        path = '/stores'
 
 
 class Path(IPath):
     pass
 
 
-class Order(impl.SyncChangeMixin, IOrder):
+class Order(IOrder):
     store = impl.fields.ObjectField(model=Store)
     route = impl.fields.ObjectField(model='efidgy.models.idd_or.OrderRoute')
+
+    class service(impl.service.SyncChangeMixin, impl.service.SolutionService):
+        path = '/orders'
 
 
 class OrderSchedule(IOrderSchedule):
@@ -203,6 +198,9 @@ class VehicleRoute(IVehicleRoute):
     schedule = impl.fields.ListField(item=VehicleSchedule)
 
 
-class Vehicle(impl.SyncChangeMixin, IVehicle):
+class Vehicle(IVehicle):
     store = impl.fields.ObjectField(model=Store)
     route = impl.fields.ObjectField(model=VehicleRoute)
+
+    class service(impl.service.SyncChangeMixin, impl.service.SolutionService):
+        path = '/vehicles'

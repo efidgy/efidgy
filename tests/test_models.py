@@ -31,28 +31,28 @@ class TestImpl(unittest.TestCase):
         efidgy.env = efidgy.env.override(
             unit_system=efidgy.models.UnitSystem.IMPERIAL,
         )
-        projects = models.Project.filter(name=self.PROJECT_NAME)
+        projects = models.Project.service.filter(name=self.PROJECT_NAME)
         for project in projects:
             project.delete()
 
     def test_client_errors(self):
         with self.assertRaises(AssertionError):
-            models.ProjectType.get(pk='XXX')
+            models.ProjectType.service.get(pk='XXX')
         with self.assertRaises(AssertionError):
-            models.Project.get(foo='XXX')
+            models.Project.service.get(foo='XXX')
 
     def test_authentication(self):
         env = efidgy.env.override(token='XXX')
         with self.assertRaises(exceptions.AuthenticationFailed):
-            models.Project.use(env).get(pk='XXX')
+            models.Project.service.use(env).get(pk='XXX')
 
     def test_not_found(self):
         with self.assertRaises(exceptions.NotFound):
-            models.Project.get(pk='XXX')
+            models.Project.service.get(pk='XXX')
 
     def test_validation(self):
         with self.assertRaises(exceptions.ValidationError):
-            models.Project.create(
+            models.Project.service.create(
                 name=self.PROJECT_NAME,
                 currency='USD',
                 project_type=models.ProjectType(
@@ -62,11 +62,11 @@ class TestImpl(unittest.TestCase):
             )
 
     def test_use(self):
-        models.ProjectType.all()
-        models.ProjectType.use(efidgy.env.override(code='XXX')).all()
+        models.ProjectType.service.all()
+        models.ProjectType.service.use(efidgy.env.override(code='XXX')).all()
 
     def test_filter(self):
-        project = models.Project.create(
+        project = models.Project.service.create(
             name=self.PROJECT_NAME,
             currency='USD',
             project_type=models.ProjectType(
@@ -74,13 +74,16 @@ class TestImpl(unittest.TestCase):
             ),
             shared_mode=models.SharedMode.PRIVATE,
         )
-        self.assertEqual(len(models.Project.filter(name=self.PROJECT_NAME)), 1)
-        self.assertEqual(models.Project.first(name=self.PROJECT_NAME), project)
+        all_projects = models.Project.service.filter(name=self.PROJECT_NAME)
+        first_project = models.Project.service.first(name=self.PROJECT_NAME)
+
+        self.assertEqual(len(all_projects), 1)
+        self.assertEqual(first_project, project)
 
     @async_test
     async def test_avalidation(self):
         with self.assertRaises(exceptions.ValidationError):
-            await amodels.Project.create(
+            await amodels.Project.service.create(
                 name=self.PROJECT_NAME,
                 currency='USD',
                 project_type=amodels.ProjectType(
@@ -90,7 +93,7 @@ class TestImpl(unittest.TestCase):
             )
 
     def test_sync(self):
-        project = models.Project.create(
+        project = models.Project.service.create(
             name=self.PROJECT_NAME,
             currency='USD',
             project_type=models.ProjectType(
@@ -102,7 +105,7 @@ class TestImpl(unittest.TestCase):
 
     @async_test
     async def test_async(self):
-        project = await amodels.Project.create(
+        project = await amodels.Project.service.create(
             name=self.PROJECT_NAME,
             currency='USD',
             project_type=amodels.ProjectType(
@@ -122,7 +125,7 @@ class TestModels(unittest.TestCase):
         #     level=logging.DEBUG,
         # )
 
-        for project in models.Project.all():
+        for project in models.Project.service.all():
             if project.name == self.PROJECT_NAME:
                 project.delete()
 
@@ -204,7 +207,7 @@ class TestModels(unittest.TestCase):
             ))
 
     def test_solve(self):
-        project = models.Project.create(
+        project = models.Project.service.create(
             name=self.PROJECT_NAME,
             currency='USD',
             project_type=models.ProjectType(
@@ -216,7 +219,7 @@ class TestModels(unittest.TestCase):
         stores = {}
         for data in self.stores:
             lat, lon = tools.geocode(data['address'])
-            store = models.idd_or.Store.create(
+            store = models.idd_or.Store.service.create(
                 project=project,
                 lat=lat,
                 lon=lon,
@@ -227,7 +230,7 @@ class TestModels(unittest.TestCase):
         vehicles = {}
         for data in self.vehicles:
             data['store'] = stores[data['store']]
-            vehicle = models.idd_or.Vehicle.create(
+            vehicle = models.idd_or.Vehicle.service.create(
                 project=project,
                 **data,
             )
@@ -237,7 +240,7 @@ class TestModels(unittest.TestCase):
         for data in self.orders:
             lat, lon = tools.geocode(data['address'])
             data['store'] = stores[data['store']]
-            order = models.idd_or.Order.create(
+            order = models.idd_or.Order.service.create(
                 project=project,
                 lat=lat,
                 lon=lon,
@@ -247,20 +250,20 @@ class TestModels(unittest.TestCase):
 
         project.computate()
 
-        solutions = models.Solution.all(
+        solutions = models.Solution.service.all(
             project=project,
         )
         self.assertTrue(len(solutions) > 0)
         solution = solutions[0]
 
-        vehicles = models.idd_or.Vehicle.all(
+        vehicles = models.idd_or.Vehicle.service.all(
             project=project,
             solution=solution,
         )
         for vehicle in vehicles:
             self._print_vehicle(vehicle)
 
-        orders = models.idd_or.Order.all(
+        orders = models.idd_or.Order.service.all(
             project=project,
             solution=solution,
         )
@@ -269,7 +272,7 @@ class TestModels(unittest.TestCase):
 
     @async_test
     async def test_asolve(self):
-        project = await amodels.Project.create(
+        project = await amodels.Project.service.create(
             name=self.PROJECT_NAME,
             currency='USD',
             project_type=amodels.ProjectType(
@@ -281,7 +284,7 @@ class TestModels(unittest.TestCase):
         stores = {}
         for data in self.stores:
             lat, lon = await atools.geocode(data['address'])
-            store = await amodels.idd_or.Store.create(
+            store = await amodels.idd_or.Store.service.create(
                 project=project,
                 lat=lat,
                 lon=lon,
@@ -292,7 +295,7 @@ class TestModels(unittest.TestCase):
         vehicles = {}
         for data in self.vehicles:
             data['store'] = stores[data['store']]
-            vehicle = await amodels.idd_or.Vehicle.create(
+            vehicle = await amodels.idd_or.Vehicle.service.create(
                 project=project,
                 **data,
             )
@@ -302,7 +305,7 @@ class TestModels(unittest.TestCase):
         for data in self.orders:
             lat, lon = await atools.geocode(data['address'])
             data['store'] = stores[data['store']]
-            order = await amodels.idd_or.Order.create(
+            order = await amodels.idd_or.Order.service.create(
                 project=project,
                 lat=lat,
                 lon=lon,
@@ -312,20 +315,20 @@ class TestModels(unittest.TestCase):
 
         await project.computate()
 
-        solutions = await amodels.Solution.all(
+        solutions = await amodels.Solution.service.all(
             project=project,
         )
         self.assertTrue(len(solutions) > 0)
         solution = solutions[0]
 
-        vehicles = await amodels.idd_or.Vehicle.all(
+        vehicles = await amodels.idd_or.Vehicle.service.all(
             project=project,
             solution=solution,
         )
         for vehicle in vehicles:
             self._print_vehicle(vehicle)
 
-        orders = await amodels.idd_or.Order.all(
+        orders = await amodels.idd_or.Order.service.all(
             project=project,
             solution=solution,
         )
