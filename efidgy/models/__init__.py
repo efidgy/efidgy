@@ -91,7 +91,7 @@ class IProject(impl.CustomerModel):
 
     def _get_computation_path(self):
         return '{}/{}/computation'.format(
-            self.get_path(self.get_context()),
+            self._get_path(self._get_context()),
             self.pk,
         )
 
@@ -127,16 +127,16 @@ class Project(impl.SyncChangeMixin, IProject):
     member = impl.fields.ObjectField(model=Member)
 
     def start_computation(self):
-        c = impl.client.SyncClient(self.get_env())
+        c = impl.client.SyncClient(self._get_env())
         c.post(self._get_computation_path(), None)
 
     def stop_computation(self):
-        c = impl.client.SyncClient(self.get_env())
+        c = impl.client.SyncClient(self._get_env())
         c.delete(self._get_computation_path())
 
     def wait_computation(self):
         while True:
-            c = impl.client.SyncClient(self.get_env())
+            c = impl.client.SyncClient(self._get_env())
             response = c.get(self._get_computation_path())
             self._log_messages(response['messages'])
             if response['state'] not in [JobState.PENDING, JobState.WORKING]:

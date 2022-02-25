@@ -47,16 +47,16 @@ class Project(impl.AsyncChangeMixin, models.IProject):
     member = impl.fields.ObjectField(model=Member)
 
     async def start_computation(self):
-        c = impl.client.AsyncClient(self.get_env())
+        c = impl.client.AsyncClient(self._get_env())
         await c.post(self._get_computation_path(), None)
 
     async def stop_computation(self):
-        c = impl.client.AsyncClient(self.get_env())
+        c = impl.client.AsyncClient(self._get_env())
         await c.delete(self._get_computation_path())
 
     async def wait_computation(self):
         while True:
-            c = impl.client.AsyncClient(self.get_env())
+            c = impl.client.AsyncClient(self._get_env())
             response = await c.get(self._get_computation_path())
             self._log_messages(response['messages'])
             if response['state'] not in [JobState.PENDING, JobState.WORKING]:
