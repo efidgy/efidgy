@@ -34,13 +34,13 @@ __all__ = [
 ]
 
 
+class Member(models.IMember):
+    pass
+
+
 class ProjectType(models.IProjectType):
     class service(impl.service.AsyncViewMixin, impl.service.EfidgyService):
         path = '/project_types'
-
-
-class Member(models.IMember):
-    pass
 
 
 class Project(models.IProject):

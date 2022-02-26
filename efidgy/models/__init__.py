@@ -103,15 +103,17 @@ class ISolution(impl.model.Model):
     pk = impl.fields.PrimaryKey()
     cost = impl.fields.FloatField()
     outdated = impl.fields.BooleanField()
+    issue_stats = impl.fields.DictField()
+    summary = impl.fields.DictField()
+
+
+class Member(IMember):
+    pass
 
 
 class ProjectType(IProjectType):
     class service(impl.service.SyncViewMixin, impl.service.EfidgyService):
         path = '/refs/project_types'
-
-
-class Member(IMember):
-    pass
 
 
 class Project(IProject):
