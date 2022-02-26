@@ -56,16 +56,13 @@ class JobState:
     SUCCESS = 'success'
 
 
-class IProjectType(impl.EfidgyModel):
+class IProjectType(impl.model.Model):
     code = impl.fields.PrimaryKey()
     name = impl.fields.CharField()
     description = impl.fields.CharField()
 
-    class Meta:
-        path = '/refs/project_types'
 
-
-class IMember(impl.Model):
+class IMember(impl.model.Model):
     pk = impl.fields.PrimaryKey()
     email = impl.fields.CharField()
     first_name = impl.fields.CharField()
@@ -73,7 +70,7 @@ class IMember(impl.Model):
     role = impl.fields.CharField()
 
 
-class IProject(impl.CustomerModel):
+class IProject(impl.model.Model):
     pk = impl.fields.PrimaryKey()
     name = impl.fields.CharField()
     currency = impl.fields.CharField()
@@ -86,12 +83,9 @@ class IProject(impl.CustomerModel):
     issue_stats = impl.fields.DictField()
     summary = impl.fields.DictField()
 
-    class Meta:
-        path = '/projects'
-
     def _get_computation_path(self):
         return '{}/{}/computation'.format(
-            self._get_path(self._get_context()),
+            self.service._get_path(self._get_context()),
             self.pk,
         )
 
@@ -105,38 +99,41 @@ class IProject(impl.CustomerModel):
         self._logged_messages = logged_messages
 
 
-class ISolution(impl.ProjectModel):
+class ISolution(impl.model.Model):
     pk = impl.fields.PrimaryKey()
     cost = impl.fields.FloatField()
     outdated = impl.fields.BooleanField()
-
-    class Meta:
-        path = '/solutions'
-
-
-class ProjectType(impl.SyncViewMixin, IProjectType):
-    pass
+    issue_stats = impl.fields.DictField()
+    summary = impl.fields.DictField()
 
 
 class Member(IMember):
     pass
 
 
-class Project(impl.SyncChangeMixin, IProject):
+class ProjectType(IProjectType):
+    class service(impl.service.SyncViewMixin, impl.service.EfidgyService):
+        path = '/refs/project_types'
+
+
+class Project(IProject):
     project_type = impl.fields.ObjectField(model=ProjectType)
     member = impl.fields.ObjectField(model=Member)
 
+    class service(impl.service.SyncChangeMixin, impl.service.CustomerService):
+        path = '/projects'
+
     def start_computation(self):
-        c = impl.client.SyncClient(self._get_env())
+        c = impl.client.SyncClient(self.service._get_env())
         c.post(self._get_computation_path(), None)
 
     def stop_computation(self):
-        c = impl.client.SyncClient(self._get_env())
+        c = impl.client.SyncClient(self.service._get_env())
         c.delete(self._get_computation_path())
 
     def wait_computation(self):
         while True:
-            c = impl.client.SyncClient(self._get_env())
+            c = impl.client.SyncClient(self.service._get_env())
             response = c.get(self._get_computation_path())
             self._log_messages(response['messages'])
             if response['state'] not in [JobState.PENDING, JobState.WORKING]:
@@ -148,5 +145,6 @@ class Project(impl.SyncChangeMixin, IProject):
         self.wait_computation()
 
 
-class Solution(impl.SyncViewMixin, ISolution):
-    pass
+class Solution(ISolution):
+    class service(impl.service.SyncViewMixin, impl.service.ProjectService):
+        path = '/solutions'

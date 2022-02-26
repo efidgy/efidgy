@@ -24,29 +24,23 @@ __version__ = 'dev'
 
 
 class Env:
-    def __init__(
-            self, host=None, token=None, code=None, unit_system=None,
-            insecure=False):
-        self.host = host
+    def __init__(self, token=None, code=None, unit_system=None):
+        self.host = os.environ.get('EFIDGY_HOST', 'console.efidgy.com')
+        self.insecure = os.environ.get('EFIDGY_INSECURE', '0') != '0'
         self.token = token
         self.code = code
         self.unit_system = unit_system
-        self.insecure = insecure
 
     def override(self, **kwargs):
         return Env(**{
-            'host': self.host,
             'token': self.token,
             'code': self.code,
             'unit_system': self.unit_system,
-            'insecure': self.insecure,
             **kwargs,
         })
 
 
 env = Env(
-    host=os.environ.get('EFIDGY_HOST', 'console.efidgy.com'),
     token=os.environ.get('EFIDGY_ACCESS_TOKEN', None),
     code=os.environ.get('EFIDGY_CUSTOMER_CODE', None),
-    insecure=os.environ.get('EFIDGY_INSECURE', '0') != '0',
 )
