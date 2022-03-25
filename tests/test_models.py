@@ -80,6 +80,29 @@ class TestImpl(unittest.TestCase):
         self.assertEqual(len(all_projects), 1)
         self.assertEqual(first_project, project)
 
+        store = models.idd_or.Store.service.create(
+            project=project,
+            address='Address',
+            name='Delivery Inc.',
+            lat=0,
+            lon=0,
+        )
+
+        stores = models.idd_or.Store.service.all(project=project)
+        self.assertEqual(len(stores), 1)
+
+        stores = models.idd_or.Store.service.filter(
+            project=project,
+            name='Delivery Inc.',
+        )
+        self.assertEqual(len(stores), 1)
+
+        first_store = models.idd_or.Store.service.first(
+            project=project,
+            name='Delivery Inc.',
+        )
+        self.assertEqual(first_store, store)
+
     @async_test
     async def test_avalidation(self):
         with self.assertRaises(exceptions.ValidationError):

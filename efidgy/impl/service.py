@@ -18,8 +18,11 @@ class SyncAllMixin:
         ret = []
         for o in cls.all(**kwargs):
             matched = True
-            for field, value in kwargs.items():
-                if getattr(o, field, None) != value:
+            for field in o._meta.fields:
+                if (
+                    field.name in kwargs
+                    and getattr(o, field.name) != kwargs[field.name]
+                ):
                     matched = False
                     break
             if matched:
