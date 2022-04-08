@@ -182,7 +182,7 @@ class TestModels(unittest.TestCase):
                 'delivery_time_to': datetime.time(16, 0),
                 'load_duration': datetime.timedelta(minutes=1),
                 'unload_duration': datetime.timedelta(minutes=5),
-                'boxes': 1,
+                'items': 1,
                 'volume': 3.53,
                 'weight': 22.05,
             },
