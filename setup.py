@@ -23,7 +23,7 @@ setup(
     author_email='vasily.stepanov@efidgy.com',
     license='GPL3',
     keywords='efidgy logistics optimization dispatcing vrp',
-    url='https://github.com/efidgy/efidgy',
+    url='https://efidgy.com/',
     description='Python bindings to efidgy services.',
     long_description=read('README.md'),
     long_description_content_type='text/markdown',
@@ -38,6 +38,7 @@ setup(
     ],
     project_urls={
         'Documentation': 'https://efidgy.com/docs',
+        'Source': 'https://github.com/efidgy/efidgy',
     },
     packages=find_packages(),
     install_requires=[
