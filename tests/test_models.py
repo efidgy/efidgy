@@ -54,7 +54,9 @@ class TestImpl(unittest.TestCase):
         with self.assertRaises(exceptions.ValidationError):
             models.Project.service.create(
                 name=self.PROJECT_NAME,
-                currency='USD',
+                currency=models.Currency(
+                    code='USD',
+                ),
                 project_type=models.ProjectType(
                     code='XXX',
                 ),
@@ -68,7 +70,9 @@ class TestImpl(unittest.TestCase):
     def test_filter(self):
         project = models.Project.service.create(
             name=self.PROJECT_NAME,
-            currency='USD',
+            currency=models.Currency(
+                code='USD',
+            ),
             project_type=models.ProjectType(
                 code=models.ProjectTypeCode.IDD_OR,
             ),
@@ -108,7 +112,9 @@ class TestImpl(unittest.TestCase):
         with self.assertRaises(exceptions.ValidationError):
             await amodels.Project.service.create(
                 name=self.PROJECT_NAME,
-                currency='USD',
+                currency=amodels.Currency(
+                    code='USD',
+                ),
                 project_type=amodels.ProjectType(
                     code='XXX',
                 ),
@@ -118,7 +124,9 @@ class TestImpl(unittest.TestCase):
     def test_sync(self):
         project = models.Project.service.create(
             name=self.PROJECT_NAME,
-            currency='USD',
+            currency=models.Currency(
+                code='USD',
+            ),
             project_type=models.ProjectType(
                 code=models.ProjectTypeCode.IDD_OR,
             ),
@@ -130,7 +138,9 @@ class TestImpl(unittest.TestCase):
     async def test_async(self):
         project = await amodels.Project.service.create(
             name=self.PROJECT_NAME,
-            currency='USD',
+            currency=amodels.Currency(
+                code='USD',
+            ),
             project_type=amodels.ProjectType(
                 code=amodels.ProjectTypeCode.IDD_OR,
             ),
@@ -232,7 +242,9 @@ class TestModels(unittest.TestCase):
     def test_solve(self):
         project = models.Project.service.create(
             name=self.PROJECT_NAME,
-            currency='USD',
+            currency=models.Currency(
+                code='USD',
+            ),
             project_type=models.ProjectType(
                 code=models.ProjectTypeCode.IDD_OR,
             ),
@@ -278,6 +290,10 @@ class TestModels(unittest.TestCase):
         )
         self.assertTrue(len(solutions) > 0)
         solution = solutions[0]
+        print('{cost:.2f}{currency}'.format(
+            cost=solution.cost,
+            currency=project.currency.symbol
+        ))
 
         vehicles = models.idd_or.Vehicle.service.all(
             project=project,
@@ -295,9 +311,12 @@ class TestModels(unittest.TestCase):
 
     @async_test
     async def test_asolve(self):
+        return
         project = await amodels.Project.service.create(
             name=self.PROJECT_NAME,
-            currency='USD',
+            currency=amodels.Currency(
+                code='USD',
+            ),
             project_type=amodels.ProjectType(
                 code=amodels.ProjectTypeCode.IDD_OR,
             ),
@@ -343,6 +362,10 @@ class TestModels(unittest.TestCase):
         )
         self.assertTrue(len(solutions) > 0)
         solution = solutions[0]
+        print('{cost:.2f}{currency}'.format(
+            cost=solution.cost,
+            currency=project.currency.symbol
+        ))
 
         vehicles = await amodels.idd_or.Vehicle.service.all(
             project=project,

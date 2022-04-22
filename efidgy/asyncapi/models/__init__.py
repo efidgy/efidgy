@@ -38,12 +38,18 @@ class Member(models.IMember):
     pass
 
 
+class Currency(models.ICurrency):
+    class service(impl.service.AsyncViewMixin, impl.service.EfidgyService):
+        path = '/refs/currencies'
+
+
 class ProjectType(models.IProjectType):
     class service(impl.service.AsyncViewMixin, impl.service.EfidgyService):
-        path = '/project_types'
+        path = '/refs/project_types'
 
 
 class Project(models.IProject):
+    currency = impl.fields.ObjectField(model=Currency)
     project_type = impl.fields.ObjectField(model=ProjectType)
     member = impl.fields.ObjectField(model=Member)
 
