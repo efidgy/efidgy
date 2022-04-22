@@ -59,7 +59,9 @@ import efidgy
 
 project = efidgy.models.Project.service.create(
     name='Demo',
-    currency='USD',
+    currency=efidgy.models.Currency(
+        code='USD',
+    ),
     project_type=efidgy.models.ProjectType(
         code=efidgy.models.ProjectTypeCode.IDD_OR,
     ),
@@ -115,6 +117,10 @@ solutions = efidgy.models.Solution.service.all(
 
 if solutions:
     solution = solutions[0]
+    print('{cost:.2f}{currency}'.format(
+        cost=solution.cost,
+        currency=project.currency.symbol
+    ))
 
     vehicle = efidgy.models.idd_or.Vehicle.service.get(
         pk=vehicle.pk,

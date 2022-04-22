@@ -56,6 +56,11 @@ class JobState:
     SUCCESS = 'success'
 
 
+class ICurrency(impl.model.Model):
+    code = impl.fields.PrimaryKey()
+    symbol = impl.fields.CharField()
+
+
 class IProjectType(impl.model.Model):
     code = impl.fields.PrimaryKey()
     name = impl.fields.CharField()
@@ -73,7 +78,7 @@ class IMember(impl.model.Model):
 class IProject(impl.model.Model):
     pk = impl.fields.PrimaryKey()
     name = impl.fields.CharField()
-    currency = impl.fields.CharField()
+    currency = impl.fields.ObjectField(model=ICurrency)
     project_type = impl.fields.ObjectField(model=IProjectType)
     shared_mode = impl.fields.CharField()
     owner = impl.fields.ObjectField(model=IMember)
@@ -111,12 +116,18 @@ class Member(IMember):
     pass
 
 
+class Currency(ICurrency):
+    class service(impl.service.SyncViewMixin, impl.service.EfidgyService):
+        path = '/refs/currencies'
+
+
 class ProjectType(IProjectType):
     class service(impl.service.SyncViewMixin, impl.service.EfidgyService):
         path = '/refs/project_types'
 
 
 class Project(IProject):
+    currency = impl.fields.ObjectField(model=Currency)
     project_type = impl.fields.ObjectField(model=ProjectType)
     member = impl.fields.ObjectField(model=Member)
 
