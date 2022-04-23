@@ -59,12 +59,8 @@ import efidgy
 
 project = efidgy.models.Project.service.create(
     name='Demo',
-    currency=efidgy.models.Currency(
-        code='USD',
-    ),
-    project_type=efidgy.models.ProjectType(
-        code=efidgy.models.ProjectTypeCode.IDD_OR,
-    ),
+    currency='USD',
+    project_type=efidgy.models.ProjectTypeCode.IDD_OR,
     shared_mode=efidgy.models.SharedMode.PRIVATE,
 )
 
