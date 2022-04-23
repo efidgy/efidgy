@@ -54,12 +54,8 @@ class TestImpl(unittest.TestCase):
         with self.assertRaises(exceptions.ValidationError):
             models.Project.service.create(
                 name=self.PROJECT_NAME,
-                currency=models.Currency(
-                    code='USD',
-                ),
-                project_type=models.ProjectType(
-                    code='XXX',
-                ),
+                currency='USD',
+                project_type='XXX',
                 shared_mode=models.SharedMode.PRIVATE,
             )
 
@@ -70,12 +66,8 @@ class TestImpl(unittest.TestCase):
     def test_filter(self):
         project = models.Project.service.create(
             name=self.PROJECT_NAME,
-            currency=models.Currency(
-                code='USD',
-            ),
-            project_type=models.ProjectType(
-                code=models.ProjectTypeCode.IDD_OR,
-            ),
+            currency='USD',
+            project_type=models.ProjectTypeCode.IDD_OR,
             shared_mode=models.SharedMode.PRIVATE,
         )
         all_projects = models.Project.service.filter(name=self.PROJECT_NAME)
@@ -112,24 +104,16 @@ class TestImpl(unittest.TestCase):
         with self.assertRaises(exceptions.ValidationError):
             await amodels.Project.service.create(
                 name=self.PROJECT_NAME,
-                currency=amodels.Currency(
-                    code='USD',
-                ),
-                project_type=amodels.ProjectType(
-                    code='XXX',
-                ),
+                currency='USD',
+                project_type='XXX',
                 shared_mode=amodels.SharedMode.PRIVATE,
             )
 
     def test_sync(self):
         project = models.Project.service.create(
             name=self.PROJECT_NAME,
-            currency=models.Currency(
-                code='USD',
-            ),
-            project_type=models.ProjectType(
-                code=models.ProjectTypeCode.IDD_OR,
-            ),
+            currency='USD',
+            project_type=models.ProjectTypeCode.IDD_OR,
             shared_mode=models.SharedMode.PRIVATE,
         )
         project.delete()
@@ -138,12 +122,8 @@ class TestImpl(unittest.TestCase):
     async def test_async(self):
         project = await amodels.Project.service.create(
             name=self.PROJECT_NAME,
-            currency=amodels.Currency(
-                code='USD',
-            ),
-            project_type=amodels.ProjectType(
-                code=amodels.ProjectTypeCode.IDD_OR,
-            ),
+            currency='USD',
+            project_type=amodels.ProjectTypeCode.IDD_OR,
             shared_mode=amodels.SharedMode.PRIVATE,
         )
         await project.delete()
@@ -242,12 +222,8 @@ class TestModels(unittest.TestCase):
     def test_solve(self):
         project = models.Project.service.create(
             name=self.PROJECT_NAME,
-            currency=models.Currency(
-                code='USD',
-            ),
-            project_type=models.ProjectType(
-                code=models.ProjectTypeCode.IDD_OR,
-            ),
+            currency='USD',
+            project_type=models.ProjectTypeCode.IDD_OR,
             shared_mode=models.SharedMode.PRIVATE,
         )
 
@@ -311,15 +287,10 @@ class TestModels(unittest.TestCase):
 
     @async_test
     async def test_asolve(self):
-        return
         project = await amodels.Project.service.create(
             name=self.PROJECT_NAME,
-            currency=amodels.Currency(
-                code='USD',
-            ),
-            project_type=amodels.ProjectType(
-                code=amodels.ProjectTypeCode.IDD_OR,
-            ),
+            currency='USD',
+            project_type=amodels.ProjectTypeCode.IDD_OR,
             shared_mode=amodels.SharedMode.PRIVATE,
         )
 

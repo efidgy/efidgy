@@ -99,9 +99,15 @@ class ObjectField(Field):
     def _encode(self, value):
         if value is None:
             return None
-        assert isinstance(value, self.model), (
-            '{} instance expected: {}'.format(self.model, type(value))
-        )
+
+        if not isinstance(value, self.model):
+            primary_key = self.model._meta.primary_key
+            if primary_key is None:
+                raise AssertionError(
+                    '{} instance expected: {}'.format(self.model, type(value))
+                )
+            value = self.model(**{primary_key.name: value})
+
         return self.model._encode(value)
 
 
@@ -140,9 +146,13 @@ class PolymorphObjectField(Field):
 
         model = self._get_model(value)
 
-        assert isinstance(value, model), (
-            '{} instance expected: {}'.format(model, type(value))
-        )
+        if not isinstance(value, model):
+            primary_key = self.model._meta.primary_key
+            if primary_key is None:
+                raise AssertionError(
+                    '{} instance expected: {}'.format(model, type(value))
+                )
+            value = self.model(**{primary_key.name: value})
 
         return model._encode(value)
 
