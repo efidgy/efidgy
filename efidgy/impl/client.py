@@ -91,28 +91,28 @@ class Client:
             if e.code == 400:
                 detail = data.get('detail')
                 if detail is not None:
-                    raise efidgy.exceptions.BadRequest(detail)
-                raise efidgy.exceptions.ValidationError(data)
+                    raise efidgy.exceptions.BadRequest(detail) from None
+                raise efidgy.exceptions.ValidationError(data) from None
             if e.code == 401:
                 detail = data.get(
                     'detail',
                     'Authentication failed.',
                 )
-                raise efidgy.exceptions.AuthenticationFailed(detail)
+                raise efidgy.exceptions.AuthenticationFailed(detail) from None
             if e.code == 403:
                 detail = data.get(
                     'detail',
                     'Permission denied.',
                 )
-                raise efidgy.exceptions.PermissionDenied(detail)
+                raise efidgy.exceptions.PermissionDenied(detail) from None
             if e.code == 404:
                 detail = data.get('detail', 'Not found.')
-                raise efidgy.exceptions.NotFound(detail)
+                raise efidgy.exceptions.NotFound(detail) from None
             if e.code == 405:
                 detail = data.get('detail', 'Method not allowed.')
-                raise efidgy.exceptions.MethodNotAllowed(detail)
+                raise efidgy.exceptions.MethodNotAllowed(detail) from None
             if e.code >= 500 and e.code < 600:
-                raise efidgy.exceptions.InternalServerError()
+                raise efidgy.exceptions.InternalServerError() from None
             raise
         except json.decoder.JSONDecodeError:
             return None
