@@ -3,9 +3,12 @@ class EfidgyException(Exception):
 
 
 class VersionError(EfidgyException):
-    def __init__(self, server_version):
+    def __init__(self, client_version, server_version):
         super().__init__(
-            'Update client to version: {}'.format(server_version),
+            'Update client from version {} to version: {}'.format(
+                client_version,
+                server_version,
+            ),
         )
 
 
