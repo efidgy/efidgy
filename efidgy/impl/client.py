@@ -44,6 +44,39 @@ class Client:
                 'Token {}'.format(self.env.token),
             )
 
+    def _parse_version(self, version):
+        m = re.match(r'(\d+)(?:\.(\d+))?(?:\.(\d+))?', version)
+
+        major = int(m[1])
+
+        minor = m[2]
+        if minor is not None:
+            minor = int(minor)
+
+        patch = m[3]
+        if patch is not None:
+            patch = int(patch)
+
+        return major, minor, patch
+
+    def _match_versions(self, client_version, server_version):
+        print('match', client_version, server_version)
+        (
+            client_major,
+            client_minor,
+            client_patch,
+        ) = self._parse_version(client_version)
+        (
+            server_major,
+            server_minor,
+            server_patch,
+        ) = self._parse_version(server_version)
+        if client_major != server_major or client_minor != server_minor:
+            raise efidgy.exceptions.VersionError(
+                client_version,
+                server_version,
+            )
+
     def _check_api_version(self):
         if self._verified:
             return
@@ -55,18 +88,17 @@ class Client:
         except (urllib.error.HTTPError, json.decoder.JSONDecodeError):
             data = None
 
-        version = data.get('version') if data else None
-        assert version, (
+        server_version = data.get('version') if data else None
+        assert server_version, (
             'Unable to fetch server version.'
         )
-        if version == 'dev':
+        if server_version == 'dev':
             return
         if efidgy.__version__ == 'dev':
             return
         m = re.match(r'([^-]+)(?:-.+)?', efidgy.__version__)
-        local_version = m[1] if m else efidgy.__version__
-        if version != local_version:
-            raise efidgy.exceptions.VersionError(version)
+        client_version = m[1] if m else efidgy.__version__
+        self._match_versions(client_version, server_version)
 
         type(self)._verified = True
 
